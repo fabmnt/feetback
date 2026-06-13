@@ -33,7 +33,13 @@ export default function DemoCustomerAppPage() {
         dangerouslySetInnerHTML={{
           __html: `
           document.addEventListener("click", (event) => {
-            if (!event.target.closest("[data-open-feetback]")) {
+            const target = event.target;
+
+            if (!(target instanceof Element)) {
+              return;
+            }
+
+            if (!target.closest("[data-open-feetback]")) {
               return;
             }
 

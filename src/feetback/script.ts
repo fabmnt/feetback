@@ -59,6 +59,7 @@ const HOST_ID = "feetback-shadow-host";
 const PRIVACY_MASK_SELECTOR =
   "[data-feetback-mask], [data-feetback-privacy-mask]";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const SUBMIT_TIMEOUT_MS = 10_000;
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/png",
   "image/jpeg",
@@ -402,8 +403,13 @@ export function initFeetbackScript(win: Window = window) {
       return true;
     });
 
-    const images = await Promise.all(acceptedFiles.map(readUploadedImage));
-    state.uploadedImages = [...state.uploadedImages, ...images];
+    try {
+      const images = await Promise.all(acceptedFiles.map(readUploadedImage));
+      state.uploadedImages = [...state.uploadedImages, ...images];
+    } catch {
+      state.uploadError = "One or more images could not be read.";
+    }
+
     render();
   }
 
@@ -419,6 +425,15 @@ export function initFeetbackScript(win: Window = window) {
       state.submission = {
         status: "error",
         message: "Feedback Content is required.",
+      };
+      render();
+      return;
+    }
+
+    if (!settings.clientKey) {
+      state.submission = {
+        status: "error",
+        message: "Feetback client key is missing.",
       };
       render();
       return;
@@ -451,13 +466,25 @@ export function initFeetbackScript(win: Window = window) {
     };
 
     try {
-      const response = await fetch(settings.apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(submission),
-      });
+      const controller = new AbortController();
+      const timeoutId = win.setTimeout(
+        () => controller.abort(),
+        SUBMIT_TIMEOUT_MS,
+      );
+      let response: Response;
+
+      try {
+        response = await fetch(settings.apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(submission),
+          signal: controller.signal,
+        });
+      } finally {
+        win.clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error("Feedback Submission failed.");
@@ -474,10 +501,18 @@ export function initFeetbackScript(win: Window = window) {
         message: "Feedback sent. Thank you.",
       };
       render();
-    } catch {
+    } catch (error) {
+      const isAbortError =
+        typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        error.name === "AbortError";
+
       state.submission = {
         status: "error",
-        message: "Could not send feedback. Please try again.",
+        message: isAbortError
+          ? "Feedback submission timed out. Please try again."
+          : "Could not send feedback. Please try again.",
       };
       render();
     }
@@ -503,7 +538,7 @@ function normalizeSettings(
   settings: FeetbackSettings | undefined,
 ): Required<FeetbackSettings> {
   return {
-    clientKey: settings?.clientKey?.trim() || "missing-client-key",
+    clientKey: settings?.clientKey?.trim() || "",
     apiUrl: settings?.apiUrl || "/api/feedback",
     reporterIdentity: settings?.reporterIdentity || {},
     feedbackButton: {
@@ -604,7 +639,13 @@ function readSafeElementLabel(element: Element) {
   }
 
   if (element instanceof HTMLInputElement && element.type !== "password") {
-    return truncate(element.placeholder || element.name || element.value, 80);
+    return truncate(
+      element.placeholder ||
+        element.name ||
+        element.getAttribute("aria-label") ||
+        element.id,
+      80,
+    );
   }
 
   if (element instanceof HTMLTextAreaElement) {
@@ -617,8 +658,9 @@ function readSafeElementLabel(element: Element) {
 function buildSelectorPath(element: Element) {
   const parts: string[] = [];
   let current: Element | null = element;
+  const body = element.ownerDocument.body;
 
-  while (current && current !== document.body && parts.length < 5) {
+  while (current && current !== body && parts.length < 5) {
     const tagName = current.tagName.toLowerCase();
     const id =
       current.id && current.id !== HOST_ID ? `#${cssEscape(current.id)}` : "";

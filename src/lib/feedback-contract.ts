@@ -22,6 +22,11 @@ const imageTypeSet = new Set([
   "image/webp",
 ]);
 const maxImageBytes = 5 * 1024 * 1024;
+export const MAX_DATA_URL_BYTES = 5 * 1024 * 1024;
+
+function isWithinDataUrlByteLimit(value: string) {
+  return new TextEncoder().encode(value).byteLength <= MAX_DATA_URL_BYTES;
+}
 
 const optionalTrimmedStringSchema = z.string().trim().optional();
 
@@ -54,7 +59,11 @@ const screenshotSchema = z
     dataUrl: z
       .string()
       .trim()
-      .min(1, "screenshot.dataUrl is required when screenshot is provided."),
+      .min(1, "screenshot.dataUrl is required when screenshot is provided.")
+      .refine(
+        isWithinDataUrlByteLimit,
+        "screenshot.dataUrl must be 5 MB or smaller.",
+      ),
     capturedAt: z
       .string()
       .trim()
@@ -123,7 +132,11 @@ export const feedbackSubmissionSchema = z
             dataUrl: z
               .string()
               .trim()
-              .min(1, "uploadedImages[].dataUrl is required."),
+              .min(1, "uploadedImages[].dataUrl is required.")
+              .refine(
+                isWithinDataUrlByteLimit,
+                "uploadedImages[].dataUrl must be 5 MB or smaller.",
+              ),
           })
           .strict(),
       )

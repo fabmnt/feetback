@@ -13,6 +13,7 @@ describe("Feetback script", () => {
     window.__feetbackRuntime?.destroy();
     delete window.FeetbackSettings;
     vi.unstubAllGlobals();
+    vi.useRealTimers();
     vi.resetModules();
     document.body.innerHTML = "";
   });
@@ -125,10 +126,82 @@ describe("Feetback script", () => {
     });
     expect(payload.pageContext.url).toEqual(expect.any(String));
   });
+
+  it("does not submit when the client key is missing", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    window.FeetbackSettings = {
+      clientKey: "",
+      apiUrl: "/api/feedback",
+    };
+
+    await import("./script");
+
+    const shadow = getShadowRoot();
+    window.feetback?.open();
+
+    enterFeedbackContent(shadow, "This should not submit.");
+    shadow.querySelector<HTMLButtonElement>('[data-action="submit"]')?.click();
+
+    await vi.waitFor(() =>
+      expect(shadow.querySelector(".status.error")?.textContent).toBe(
+        "Feetback client key is missing.",
+      ),
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("shows a timeout error when feedback submission stalls", async () => {
+    vi.useFakeTimers();
+
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    window.FeetbackSettings = {
+      clientKey: "demo_customer_app",
+      apiUrl: "/api/feedback",
+    };
+
+    await import("./script");
+
+    const shadow = getShadowRoot();
+    window.feetback?.open();
+
+    enterFeedbackContent(shadow, "The form never finishes sending.");
+    shadow.querySelector<HTMLButtonElement>('[data-action="submit"]')?.click();
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await vi.waitFor(() =>
+      expect(shadow.querySelector(".status.error")?.textContent).toBe(
+        "Feedback submission timed out. Please try again.",
+      ),
+    );
+  });
 });
 
 function getShadowRoot() {
   const shadow = document.getElementById("feetback-shadow-host")?.shadowRoot;
   expect(shadow).toBeTruthy();
   return shadow as ShadowRoot;
+}
+
+function enterFeedbackContent(shadow: ShadowRoot, content: string) {
+  const textarea = shadow.querySelector<HTMLTextAreaElement>(
+    '[data-field="content"]',
+  );
+
+  expect(textarea).not.toBeNull();
+
+  if (!textarea) {
+    throw new Error("Expected Feedback Content textarea to render.");
+  }
+
+  textarea.value = content;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
 }
