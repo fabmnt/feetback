@@ -45,12 +45,32 @@ Optional identifying information about a Reporter provided by the Customer App, 
 _Avoid_: Account, login
 
 **User**:
-A person from the Customer who logs into the Feetback dashboard to review and manage feedback.
+A person from the Customer who logs into the Feetback dashboard to review and manage feedback, often a developer or operator responsible for Customer Apps.
 _Avoid_: Team Member, admin
 
 **Feedback Item**:
-One submission sent by a Reporter from a Customer App.
+One submission sent by a Reporter from a Customer App; after entering the dashboard it belongs to exactly one Feedback Issue.
 _Avoid_: Ticket, response, message
+
+**Feedback Issue**:
+A developer-facing unit of work representing one underlying product problem, request, or question described by one or more related Feedback Items; it may span multiple Customer Apps owned by the same Customer, but never spans Customers.
+_Avoid_: Ticket, task, thread
+
+**Issue Signal**:
+Evidence used to rank and explain the likely importance of a Feedback Issue, such as frequency, recency, affected Customer Apps, Feedback Types, context richness, or severity hints.
+_Avoid_: Priority, score, weight
+
+**Priority**:
+A Customer-chosen indication of how soon a Feedback Issue should be addressed.
+_Avoid_: Issue Signal, importance score, severity
+
+**Issue Status**:
+The Customer-visible lifecycle state of a Feedback Issue, such as open, planned, in progress, resolved, or closed.
+_Avoid_: State, lane, stage
+
+**Implementation Prompt**:
+A text-only developer-facing prompt generated for a Feedback Issue that helps a coding agent understand the problem, evidence, expected behavior, and relevant context from related Feedback Items; it excludes Reporter Identity and visual media payloads.
+_Avoid_: Agent prompt, AI prompt, fix prompt
 
 **Feedback Submission**:
 The act of sending a Feedback Item from the Script UI to Feetback.
@@ -59,6 +79,10 @@ _Avoid_: Save, publish
 **Feedback Type**:
 The optional primary category assigned to a Feedback Item, such as bug report, complaint, security concern, improvement suggestion, performance issue, question, or other.
 _Avoid_: Kind, topic
+
+**Primary Feedback Type**:
+The main Feedback Type assigned to a Feedback Issue, derived from its Feedback Items and adjustable by a User.
+_Avoid_: Issue type, category, label
 
 **Uncategorized**:
 The state of a Feedback Item when no Feedback Type has been selected or assigned.
