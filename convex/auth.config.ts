@@ -1,15 +1,9 @@
 import type { AuthConfig } from "convex/server";
 
-const clerkJwtIssuerDomain = process.env.CLERK_JWT_ISSUER_DOMAIN;
-
-if (!clerkJwtIssuerDomain) {
-  throw new Error("CLERK_JWT_ISSUER_DOMAIN must be set.");
-}
-
 export default {
   providers: [
     {
-      domain: clerkJwtIssuerDomain,
+      domain: "https://clever-flamingo-35.clerk.accounts.dev",
       applicationID: "convex",
     },
   ],
