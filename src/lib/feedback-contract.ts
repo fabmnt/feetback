@@ -180,6 +180,7 @@ export function validateFeedbackSubmission(
 
 export function createFeedbackItem(
   submission: FeedbackSubmission,
+  options: { submittedAt?: string } = {},
 ): FeedbackItem {
   return {
     id: crypto.randomUUID(),
@@ -191,6 +192,6 @@ export function createFeedbackItem(
     screenshot: submission.screenshot ?? null,
     selectedElement: submission.selectedElement ?? null,
     uploadedImages: submission.uploadedImages ?? [],
-    submittedAt: new Date().toISOString(),
+    submittedAt: options.submittedAt ?? new Date().toISOString(),
   };
 }

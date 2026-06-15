@@ -8,13 +8,19 @@
  * @module
  */
 
+import type * as dashboard from "../dashboard.js";
+import type * as feedback from "../feedback.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  dashboard: typeof dashboard;
+  feedback: typeof feedback;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
