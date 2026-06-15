@@ -34,6 +34,20 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
   });
   const updateIssue = useMutation(api.dashboard.updateIssue);
   const [copied, setCopied] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
+  const updateIssueField = async (
+    values: Parameters<typeof updateIssue>[0],
+  ) => {
+    setUpdateError("");
+
+    try {
+      await updateIssue(values);
+    } catch (error) {
+      console.error("Failed to update issue", error);
+      setUpdateError("Issue update failed. Please try again.");
+    }
+  };
 
   if (issue === undefined) {
     return <main className="min-h-screen bg-[#f7f5ef] p-6">Loading...</main>;
@@ -70,7 +84,7 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                   value={issue.issue.status}
                   values={statuses}
                   onChange={(status) =>
-                    updateIssue({
+                    updateIssueField({
                       issueId: issue.issue._id,
                       status: status as (typeof statuses)[number],
                     })
@@ -81,7 +95,7 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                   value={issue.issue.priority}
                   values={priorities}
                   onChange={(priority) =>
-                    updateIssue({
+                    updateIssueField({
                       issueId: issue.issue._id,
                       priority: priority as (typeof priorities)[number],
                     })
@@ -93,7 +107,7 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                     value={issue.issue.primaryFeedbackType}
                     values={feedbackTypes}
                     onChange={(primaryFeedbackType) =>
-                      updateIssue({
+                      updateIssueField({
                         issueId: issue.issue._id,
                         primaryFeedbackType:
                           primaryFeedbackType as (typeof feedbackTypes)[number],
@@ -102,6 +116,9 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                   />
                 </div>
               </div>
+              {updateError ? (
+                <p className="mt-3 text-[#b42318] text-sm">{updateError}</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -205,7 +222,7 @@ function EditSelect({
   label: string;
   value: string;
   values: readonly string[];
-  onChange: (value: string) => void;
+  onChange: (value: string) => void | Promise<void>;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
@@ -229,7 +246,16 @@ function formatToken(value: string) {
   return value.replaceAll("_", " ");
 }
 
-function copyText(text: string) {
+async function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to the textarea copy path below.
+    }
+  }
+
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "");

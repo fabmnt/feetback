@@ -71,8 +71,14 @@ export function DashboardIssues() {
   });
 
   useEffect(() => {
-    void ensureDemoData({});
-  }, [ensureDemoData]);
+    if (apps === undefined || apps.length > 0) {
+      return;
+    }
+
+    void ensureDemoData({}).catch((error) => {
+      console.error("Failed to initialize demo data", error);
+    });
+  }, [apps, ensureDemoData]);
 
   return (
     <main className="min-h-screen bg-[#f7f5ef] text-[#191917]">

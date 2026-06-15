@@ -152,15 +152,15 @@ export const listIssues = query({
         throw new Error("Unauthorized");
       }
 
-      const links = await ctx.db
+      const result = await ctx.db
         .query("issueCustomerApps")
         .withIndex("by_customerAppId", (q) =>
           q.eq("customerAppId", args.customerAppId as Id<"customerApps">),
         )
-        .take(args.paginationOpts.numItems);
+        .paginate(args.paginationOpts);
 
       const issues = await Promise.all(
-        links.map((link) => ctx.db.get(link.issueId)),
+        result.page.map((link) => ctx.db.get(link.issueId)),
       );
       const page = await enrichIssues(
         ctx,
@@ -172,9 +172,8 @@ export const listIssues = query({
       );
 
       return {
+        ...result,
         page,
-        isDone: true,
-        continueCursor: "",
       };
     }
 

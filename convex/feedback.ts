@@ -79,9 +79,9 @@ export const submitPublic = mutation({
     selectedElement: v.optional(v.union(selectedElement, v.null())),
     uploadedImages: v.optional(v.array(uploadedImage)),
     requestOrigin: v.optional(v.union(v.string(), v.null())),
-    submittedAt: v.string(),
   },
   handler: async (ctx, args) => {
+    const submittedAt = new Date().toISOString();
     const customerApp =
       (await ctx.db
         .query("customerApps")
@@ -93,12 +93,12 @@ export const submitPublic = mutation({
       throw new Error("Unknown Client Key.");
     }
 
-    if (
-      customerApp.allowedOrigins.length > 0 &&
-      args.requestOrigin &&
-      !customerApp.allowedOrigins.includes(args.requestOrigin)
-    ) {
-      throw new Error("Origin is not allowed for this Client Key.");
+    if (customerApp.allowedOrigins.length > 0) {
+      const origin = args.requestOrigin?.trim();
+
+      if (!origin || !customerApp.allowedOrigins.includes(origin)) {
+        throw new Error("Origin is not allowed for this Client Key.");
+      }
     }
 
     const groupingKey = buildGroupingKey(args.content, args.type);
@@ -123,8 +123,8 @@ export const submitPublic = mutation({
           signalScore: 1,
           signalReasons: ["1 Feedback Item"],
           itemCount: 0,
-          firstSubmittedAt: args.submittedAt,
-          lastSubmittedAt: args.submittedAt,
+          firstSubmittedAt: submittedAt,
+          lastSubmittedAt: submittedAt,
         });
 
     const itemId = await ctx.db.insert("feedbackItems", {
@@ -138,7 +138,7 @@ export const submitPublic = mutation({
       pageContext: args.pageContext,
       selectedElement: args.selectedElement ?? undefined,
       media: buildMediaMetadata(args),
-      submittedAt: args.submittedAt,
+      submittedAt,
     });
 
     const issue = await ctx.db.get(issueId);
@@ -180,7 +180,7 @@ export const submitPublic = mutation({
         issue.primaryFeedbackType === "uncategorized"
           ? args.type
           : issue.primaryFeedbackType,
-      lastSubmittedAt: args.submittedAt,
+      lastSubmittedAt: submittedAt,
     });
 
     const item = await ctx.db.get(itemId);

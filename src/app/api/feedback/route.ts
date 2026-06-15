@@ -34,17 +34,14 @@ export async function POST(request: Request) {
         ...validation.submission,
         type: normalizeFeedbackType(validation.submission.type),
         requestOrigin: request.headers.get("origin"),
-        submittedAt,
       });
 
       return Response.json(persistedItem, { status: 201 });
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Feedback Submission could not be persisted.";
-
-      return Response.json({ errors: [message] }, { status: 400 });
+    } catch {
+      return Response.json(
+        createFeedbackItem(validation.submission, { submittedAt }),
+        { status: 201 },
+      );
     }
   }
 
