@@ -1,5 +1,3 @@
-import html2canvas from "html2canvas";
-
 import {
   type ElementContext,
   FEEDBACK_TYPES,
@@ -9,6 +7,14 @@ import {
   type ScreenshotAttachment,
   type UploadedImage,
 } from "../lib/feedback-types";
+import {
+  captureScreenshotAttachment,
+  getSelectableElement,
+  HOST_ID,
+  postFeedbackSubmission,
+  readElementContext,
+  readUploadedImages,
+} from "./browser-io";
 
 type FeedbackButtonPosition = "bottom-right" | "bottom-left";
 
@@ -54,18 +60,6 @@ declare global {
     __feetbackRuntime?: FeetbackRuntime;
   }
 }
-
-const HOST_ID = "feetback-shadow-host";
-const PRIVACY_MASK_SELECTOR =
-  "[data-feetback-mask], [data-feetback-privacy-mask]";
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const SUBMIT_TIMEOUT_MS = 10_000;
-const SUPPORTED_IMAGE_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/gif",
-  "image/webp",
-]);
 
 const typeLabels: Record<FeedbackType, string> = {
   bug_report: "Bug report",
@@ -260,31 +254,11 @@ export function initFeetbackScript(win: Window = window) {
     render();
 
     try {
-      const canvas = await html2canvas(doc.body, {
-        backgroundColor: null,
-        logging: false,
-        ignoreElements: (element) =>
-          element.id === HOST_ID ||
-          Boolean(element.closest(PRIVACY_MASK_SELECTOR)),
-        onclone: (clonedDocument) => {
-          for (const maskedElement of clonedDocument.querySelectorAll(
-            PRIVACY_MASK_SELECTOR,
-          )) {
-            if (maskedElement instanceof HTMLElement) {
-              maskedElement.style.visibility = "hidden";
-            }
-          }
-        },
-      });
+      const attachment = await captureScreenshotAttachment(doc);
 
       state.screenshot = {
         status: "captured",
-        attachment: {
-          dataUrl: canvas.toDataURL("image/png"),
-          capturedAt: new Date().toISOString(),
-          width: canvas.width,
-          height: canvas.height,
-        },
+        attachment,
       };
     } catch {
       state.screenshot = { status: "failed", attachment: null };
@@ -388,26 +362,11 @@ export function initFeetbackScript(win: Window = window) {
       return;
     }
 
-    const acceptedFiles = Array.from(files).filter((file) => {
-      if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-        state.uploadError =
-          "Only PNG, JPEG, GIF, or WebP images can be uploaded.";
-        return false;
-      }
+    const { images, error } = await readUploadedImages(files);
+    state.uploadError = error;
 
-      if (file.size > MAX_IMAGE_BYTES) {
-        state.uploadError = "Images must be 5 MB or smaller.";
-        return false;
-      }
-
-      return true;
-    });
-
-    try {
-      const images = await Promise.all(acceptedFiles.map(readUploadedImage));
+    if (images.length > 0) {
       state.uploadedImages = [...state.uploadedImages, ...images];
-    } catch {
-      state.uploadError = "One or more images could not be read.";
     }
 
     render();
@@ -466,31 +425,7 @@ export function initFeetbackScript(win: Window = window) {
     };
 
     try {
-      const controller = new AbortController();
-      const timeoutId = win.setTimeout(
-        () => controller.abort(),
-        SUBMIT_TIMEOUT_MS,
-      );
-      let response: Response;
-
-      try {
-        response = await fetch(settings.apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(submission),
-          signal: controller.signal,
-        });
-      } finally {
-        win.clearTimeout(timeoutId);
-      }
-
-      if (!response.ok) {
-        throw new Error("Feedback Submission failed.");
-      }
-
-      await response.json();
+      await postFeedbackSubmission(win, settings.apiUrl, submission);
       state.content = "";
       state.type = "";
       state.selectedElement = null;
@@ -595,110 +530,6 @@ function renderUploadedImages(uploadedImages: UploadedImage[]) {
   </div>`;
 }
 
-function getSelectableElement(element: Element | null) {
-  if (
-    !element ||
-    element.id === HOST_ID ||
-    element.closest(`#${HOST_ID}`) ||
-    element.closest(PRIVACY_MASK_SELECTOR)
-  ) {
-    return null;
-  }
-
-  return element;
-}
-
-function readElementContext(element: Element): ElementContext {
-  const rect = element.getBoundingClientRect();
-  const label = readSafeElementLabel(element);
-
-  return {
-    tagName: element.tagName.toLowerCase(),
-    label,
-    selectorPath: buildSelectorPath(element),
-    boundingBox: {
-      x: Math.round(rect.left),
-      y: Math.round(rect.top),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-    },
-    highlightContext: label
-      ? `${element.tagName.toLowerCase()} "${label}"`
-      : element.tagName.toLowerCase(),
-  };
-}
-
-function readSafeElementLabel(element: Element) {
-  if (element.closest(PRIVACY_MASK_SELECTOR)) {
-    return undefined;
-  }
-
-  const ariaLabel = element.getAttribute("aria-label")?.trim();
-  if (ariaLabel) {
-    return truncate(ariaLabel, 80);
-  }
-
-  if (element instanceof HTMLInputElement && element.type !== "password") {
-    return truncate(
-      element.placeholder ||
-        element.name ||
-        element.getAttribute("aria-label") ||
-        element.id,
-      80,
-    );
-  }
-
-  if (element instanceof HTMLTextAreaElement) {
-    return truncate(element.placeholder || element.name, 80);
-  }
-
-  return truncate((element.textContent || "").replace(/\s+/g, " ").trim(), 80);
-}
-
-function buildSelectorPath(element: Element) {
-  const parts: string[] = [];
-  let current: Element | null = element;
-  const body = element.ownerDocument.body;
-
-  while (current && current !== body && parts.length < 5) {
-    const tagName = current.tagName.toLowerCase();
-    const id =
-      current.id && current.id !== HOST_ID ? `#${cssEscape(current.id)}` : "";
-    const className = Array.from(current.classList)
-      .slice(0, 2)
-      .map((value) => `.${cssEscape(value)}`)
-      .join("");
-    const siblingIndex = Array.from(current.parentElement?.children ?? [])
-      .filter((sibling) => sibling.tagName === current?.tagName)
-      .indexOf(current);
-
-    parts.unshift(
-      `${tagName}${id}${className}${siblingIndex > 0 ? `:nth-of-type(${siblingIndex + 1})` : ""}`,
-    );
-    current = current.parentElement;
-  }
-
-  return parts.join(" > ");
-}
-
-function readUploadedImage(file: File) {
-  return new Promise<UploadedImage>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener("error", () =>
-      reject(new Error("Unable to read image.")),
-    );
-    reader.addEventListener("load", () => {
-      resolve({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        dataUrl: String(reader.result),
-      });
-    });
-    reader.readAsDataURL(file);
-  });
-}
-
 function focusContentEnd() {
   const textarea = document
     .getElementById(HOST_ID)
@@ -715,20 +546,6 @@ function focusContentEnd() {
 
 function formatElementSummary(element: ElementContext) {
   return [element.tagName, element.label].filter(Boolean).join(" - ");
-}
-
-function truncate(value: string | undefined, maxLength: number) {
-  if (!value) {
-    return undefined;
-  }
-
-  return value.length > maxLength
-    ? `${value.slice(0, maxLength - 1)}...`
-    : value;
-}
-
-function cssEscape(value: string) {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
 }
 
 function escapeHtml(value: string | undefined) {
