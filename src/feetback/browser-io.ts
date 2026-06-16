@@ -12,6 +12,8 @@ export const PRIVACY_MASK_SELECTOR =
   "[data-feetback-mask], [data-feetback-privacy-mask]";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_DATA_URL_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES_ERROR = "Images must be 5 MB or smaller.";
 const SUBMIT_TIMEOUT_MS = 10_000;
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/png",
@@ -39,8 +41,13 @@ export async function captureScreenshotAttachment(
     },
   });
 
+  const dataUrl = canvas.toDataURL("image/png");
+  if (!isWithinDataUrlByteLimit(dataUrl)) {
+    throw new Error("Screenshot must be 5 MB or smaller.");
+  }
+
   return {
-    dataUrl: canvas.toDataURL("image/png"),
+    dataUrl,
     capturedAt: new Date().toISOString(),
     width: canvas.width,
     height: canvas.height,
@@ -52,6 +59,7 @@ export function getSelectableElement(element: Element | null) {
     !element ||
     element.id === HOST_ID ||
     element.closest(`#${HOST_ID}`) ||
+    isInsideFeetbackShadowRoot(element) ||
     element.closest(PRIVACY_MASK_SELECTOR)
   ) {
     return null;
@@ -93,7 +101,7 @@ export async function readUploadedImages(files: FileList | null) {
     }
 
     if (file.size > MAX_IMAGE_BYTES) {
-      error = "Images must be 5 MB or smaller.";
+      error = MAX_IMAGE_BYTES_ERROR;
       return false;
     }
 
@@ -105,10 +113,13 @@ export async function readUploadedImages(files: FileList | null) {
       images: await Promise.all(acceptedFiles.map(readUploadedImage)),
       error,
     };
-  } catch {
+  } catch (caughtError) {
     return {
       images: [] as UploadedImage[],
-      error: "One or more images could not be read.",
+      error:
+        caughtError instanceof Error
+          ? caughtError.message
+          : "One or more images could not be read.",
     };
   }
 }
@@ -201,15 +212,30 @@ function readUploadedImage(file: File) {
       reject(new Error("Unable to read image.")),
     );
     reader.addEventListener("load", () => {
+      const dataUrl = String(reader.result);
+      if (!isWithinDataUrlByteLimit(dataUrl)) {
+        reject(new Error(MAX_IMAGE_BYTES_ERROR));
+        return;
+      }
+
       resolve({
         name: file.name,
         type: file.type,
         size: file.size,
-        dataUrl: String(reader.result),
+        dataUrl,
       });
     });
     reader.readAsDataURL(file);
   });
+}
+
+function isInsideFeetbackShadowRoot(element: Element) {
+  const root = element.getRootNode();
+  return root instanceof ShadowRoot && root.host.id === HOST_ID;
+}
+
+function isWithinDataUrlByteLimit(dataUrl: string) {
+  return new TextEncoder().encode(dataUrl).byteLength <= MAX_DATA_URL_BYTES;
 }
 
 function truncate(value: string | undefined, maxLength: number) {
