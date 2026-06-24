@@ -5,17 +5,56 @@ import {
   ArrowUpRight,
   ChartNoAxesColumnIncreasing,
   CircleDot,
-  Filter,
+  ClipboardList,
+  Code2,
   Inbox,
+  LayoutDashboard,
+  Megaphone,
   Search,
+  Settings,
+  ShieldCheck,
+  Users,
+  Workflow,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+
+const ALL_CUSTOMER_APPS = "all-customer-apps";
+const ISSUE_PAGE_SIZE = 24;
+const VISIBLE_SIGNAL_REASON_COUNT = 3;
 
 const statuses = [
   "open",
@@ -35,10 +74,29 @@ const feedbackTypes = [
   "other",
   "uncategorized",
 ] as const;
+const sortOptions = [
+  ["signal", "Signal"],
+  ["recency", "Recent"],
+  ["item_count", "Count"],
+] as const;
+const dashboardLinks = [
+  { label: "Issues", href: "/dashboard", icon: LayoutDashboard, active: true },
+  { label: "Inbox", href: "#", icon: Inbox },
+  { label: "Roadmap", href: "#", icon: Workflow },
+  { label: "Announcements", href: "#", icon: Megaphone },
+  { label: "Customers", href: "#", icon: Users },
+  { label: "Install Script", href: "#", icon: Code2 },
+] as const;
+const adminLinks = [
+  { label: "Moderation", href: "#", icon: ShieldCheck },
+  { label: "Reports", href: "#", icon: ClipboardList },
+  { label: "Settings", href: "#", icon: Settings },
+] as const;
 
 type Status = (typeof statuses)[number];
 type Priority = (typeof priorities)[number];
 type FeedbackType = (typeof feedbackTypes)[number];
+type Sort = (typeof sortOptions)[number][0];
 
 export function DashboardIssues() {
   const [customerAppId, setCustomerAppId] = useState("");
@@ -46,9 +104,7 @@ export function DashboardIssues() {
   const [priority, setPriority] = useState("");
   const [primaryFeedbackType, setPrimaryFeedbackType] = useState("");
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"signal" | "recency" | "item_count">(
-    "signal",
-  );
+  const [sort, setSort] = useState<Sort>("signal");
   const ensureDemoData = useMutation(api.feedback.ensureDemoData);
   const apps = useQuery(api.dashboard.listCustomerApps);
   const queryArgs = useMemo(
@@ -67,7 +123,7 @@ export function DashboardIssues() {
     [customerAppId, primaryFeedbackType, priority, search, sort, status],
   );
   const issues = usePaginatedQuery(api.dashboard.listIssues, queryArgs, {
-    initialNumItems: 24,
+    initialNumItems: ISSUE_PAGE_SIZE,
   });
 
   useEffect(() => {
@@ -81,161 +137,244 @@ export function DashboardIssues() {
   }, [apps, ensureDemoData]);
 
   return (
-    <main className="min-h-screen bg-[#f7f5ef] text-[#191917]">
-      <header className="border-[#ded8ca] border-b bg-[#fffdf8]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-5 py-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
-          <div className="max-w-3xl">
-            <p className="font-semibold text-[#24736a] text-sm">
-              Feetback dashboard
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-normal md:text-5xl">
-              Feedback Issues, ranked by evidence
-            </h1>
-            <p className="mt-3 max-w-2xl text-[#5e615c] text-base">
-              Review grouped Feedback Items across Customer Apps, separate Issue
-              Signal from Priority, and copy text-only Implementation Prompts.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-[#ded8ca] bg-[#f7f5ef] text-sm">
-            <Metric label="Issues" value={issues.results.length.toString()} />
-            <Metric
-              label="Apps"
-              value={apps ? apps.length.toString() : "..."}
-            />
-            <Metric label="Mode" value="v1" />
-          </div>
-        </div>
-      </header>
-
-      <section className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-5 lg:grid-cols-[280px_1fr] lg:px-8">
-        <aside className="flex flex-col gap-4">
-          <div className="rounded-lg border border-[#ded8ca] bg-[#fffdf8] p-4">
-            <div className="mb-3 flex items-center gap-2 font-semibold text-sm">
-              <Filter />
-              Filters
+    <div className="min-h-svh bg-background text-foreground">
+      <SidebarProvider>
+        <DashboardSidebar />
+        <SidebarInset className="min-h-svh">
+          <header className="sticky top-0 border-b bg-background/95 backdrop-blur">
+            <div className="flex min-h-16 flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <SidebarTrigger />
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">
+                    Feetback dashboard
+                  </p>
+                  <h1 className="truncate font-heading font-semibold text-2xl">
+                    Feedback Issues
+                  </h1>
+                </div>
+              </div>
+              <CustomerAppSelect
+                apps={apps ?? []}
+                value={customerAppId}
+                onChange={setCustomerAppId}
+              />
             </div>
-            <div className="flex flex-col gap-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-[#686a64]">Customer App</span>
-                <select
-                  className="h-9 rounded-md border border-[#d4cebf] bg-white px-2"
-                  value={customerAppId}
-                  onChange={(event) => setCustomerAppId(event.target.value)}
+          </header>
+
+          <main className="flex flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+            <section className="grid gap-3 md:grid-cols-3">
+              <Metric label="Issues" value={issues.results.length.toString()} />
+              <Metric
+                label="Customer Apps"
+                value={apps ? apps.length.toString() : "..."}
+              />
+              <Metric label="Sort" value={formatToken(sort)} />
+            </section>
+
+            <section className="flex flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="flex min-h-8 flex-1 items-center gap-2 rounded-2xl bg-input/50 px-3">
+                  <Search className="text-muted-foreground" />
+                  <Input
+                    className="border-transparent bg-transparent px-0 shadow-none focus-visible:ring-0"
+                    placeholder="Search issue summaries"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:items-center">
+                  <DashboardSelect
+                    label="Status"
+                    value={status}
+                    values={statuses}
+                    onChange={setStatus}
+                  />
+                  <DashboardSelect
+                    label="Priority"
+                    value={priority}
+                    values={priorities}
+                    onChange={setPriority}
+                  />
+                  <DashboardSelect
+                    label="Type"
+                    value={primaryFeedbackType}
+                    values={feedbackTypes}
+                    onChange={setPrimaryFeedbackType}
+                  />
+                  <DashboardSelect
+                    label="Sort"
+                    value={sort}
+                    values={sortOptions.map(([value]) => value)}
+                    onChange={(value) => setSort(value as Sort)}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCustomerAppId("");
+                    setStatus("");
+                    setPriority("");
+                    setPrimaryFeedbackType("");
+                    setSearch("");
+                  }}
                 >
-                  <option value="">All apps</option>
-                  {(apps ?? []).map((app) => (
-                    <option key={app._id} value={app._id}>
-                      {app.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <SelectFilter
-                label="Issue Status"
-                value={status}
-                values={statuses}
-                onChange={setStatus}
-              />
-              <SelectFilter
-                label="Priority"
-                value={priority}
-                values={priorities}
-                onChange={setPriority}
-              />
-              <SelectFilter
-                label="Primary Feedback Type"
-                value={primaryFeedbackType}
-                values={feedbackTypes}
-                onChange={setPrimaryFeedbackType}
-              />
-            </div>
-          </div>
+                  Clear filters
+                </Button>
+              </div>
+            </section>
 
-          <div className="rounded-lg border border-[#ded8ca] bg-[#fffdf8] p-4">
-            <div className="mb-3 flex items-center gap-2 font-semibold text-sm">
+            {issues.status === "LoadingFirstPage" ? (
+              <IssueListSkeleton />
+            ) : issues.results.length === 0 ? (
+              <EmptyIssues />
+            ) : (
+              <section className="grid gap-3">
+                {issues.results.map((issue) => (
+                  <IssueRow key={issue._id} issue={issue} />
+                ))}
+              </section>
+            )}
+
+            {issues.status === "CanLoadMore" ? (
+              <Button variant="outline" onClick={() => issues.loadMore(24)}>
+                Load more
+              </Button>
+            ) : null}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
+  );
+}
+
+function DashboardSidebar() {
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" tooltip="Feetback" isActive>
               <ChartNoAxesColumnIncreasing />
-              Sort
-            </div>
-            <div className="grid grid-cols-3 rounded-md border border-[#d4cebf] bg-[#f7f5ef] p-1">
-              {[
-                ["signal", "Signal"],
-                ["recency", "Recent"],
-                ["item_count", "Count"],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  className={cn(
-                    "h-8 rounded-sm px-2 text-sm transition",
-                    sort === value && "bg-[#191917] text-white",
-                  )}
-                  type="button"
-                  onClick={() => setSort(value as typeof sort)}
-                >
-                  {label}
-                </button>
+              <span>Feetback</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {dashboardLinks.map((item) => (
+                <SidebarLink key={item.label} item={item} />
               ))}
-            </div>
-          </div>
-        </aside>
-
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 rounded-lg border border-[#ded8ca] bg-[#fffdf8] p-3 md:flex-row md:items-center">
-            <div className="flex min-h-10 flex-1 items-center gap-2 rounded-md border border-[#d4cebf] bg-white px-3">
-              <Search />
-              <input
-                className="h-9 flex-1 bg-transparent text-sm outline-none"
-                placeholder="Search issue summaries"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCustomerAppId("");
-                setStatus("");
-                setPriority("");
-                setPrimaryFeedbackType("");
-                setSearch("");
-              }}
-            >
-              Clear
-            </Button>
-          </div>
-
-          {issues.status === "LoadingFirstPage" ? (
-            <IssueListSkeleton />
-          ) : issues.results.length === 0 ? (
-            <EmptyIssues />
-          ) : (
-            <div className="grid gap-3">
-              {issues.results.map((issue) => (
-                <IssueRow key={issue._id} issue={issue} />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminLinks.map((item) => (
+                <SidebarLink key={item.label} item={item} />
               ))}
-            </div>
-          )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Demo workspace">
+              <CircleDot />
+              <span>Demo workspace</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
 
-          {issues.status === "CanLoadMore" ? (
-            <Button variant="outline" onClick={() => issues.loadMore(24)}>
-              Load more
-            </Button>
-          ) : null}
-        </section>
-      </section>
-    </main>
+function SidebarLink({
+  item,
+}: {
+  item: {
+    label: string;
+    href: string;
+    icon: React.ComponentType;
+    active?: boolean;
+  };
+}) {
+  const Icon = item.icon;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={<Link href={item.href} />}
+        isActive={item.active}
+        tooltip={item.label}
+      >
+        <Icon />
+        <span>{item.label}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function CustomerAppSelect({
+  apps,
+  value,
+  onChange,
+}: {
+  apps: Array<{ _id: Id<"customerApps">; name: string }>;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const items = [
+    { label: "All customer apps", value: ALL_CUSTOMER_APPS },
+    ...apps.map((app) => ({ label: app.name, value: app._id })),
+  ];
+
+  return (
+    <Select
+      items={items}
+      value={value || ALL_CUSTOMER_APPS}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === ALL_CUSTOMER_APPS ? "" : (nextValue ?? ""))
+      }
+    >
+      <SelectTrigger className="w-full md:w-64">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-24 border-[#ded8ca] border-r px-4 py-3 last:border-r-0">
-      <div className="text-[#686a64] text-xs">{label}</div>
-      <div className="mt-1 font-semibold text-xl">{value}</div>
+    <div className="rounded-lg border bg-card p-4 text-card-foreground">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <div className="mt-1 font-semibold text-2xl">{value}</div>
     </div>
   );
 }
 
-function SelectFilter({
+function DashboardSelect({
   label,
   value,
   values,
@@ -246,22 +385,33 @@ function SelectFilter({
   values: readonly string[];
   onChange: (value: string) => void;
 }) {
+  const noneValue = `${label.toLowerCase()}-all`;
+  const items = [
+    { label: `${label}: Any`, value: noneValue },
+    ...values.map((item) => ({ label: formatToken(item), value: item })),
+  ];
+
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-[#686a64]">{label}</span>
-      <select
-        className="h-9 rounded-md border border-[#d4cebf] bg-white px-2"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">Any</option>
-        {values.map((item) => (
-          <option key={item} value={item}>
-            {formatToken(item)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Select
+      items={items}
+      value={value || noneValue}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === noneValue ? "" : (nextValue ?? ""))
+      }
+    >
+      <SelectTrigger className="w-full lg:w-36">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -282,20 +432,24 @@ function IssueRow({
   };
 }) {
   return (
-    <article className="rounded-lg border border-[#ded8ca] bg-[#fffdf8] p-4 shadow-[0_1px_0_rgba(25,25,23,0.04)] transition hover:border-[#9eb7aa]">
+    <article className="rounded-lg border bg-card p-4 text-card-foreground transition hover:bg-muted/40">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Pill tone="green">{formatToken(issue.primaryFeedbackType)}</Pill>
-            <Pill>{formatToken(issue.status)}</Pill>
-            <Pill tone={issue.priority === "urgent" ? "red" : "neutral"}>
+            <Badge variant="secondary">
+              {formatToken(issue.primaryFeedbackType)}
+            </Badge>
+            <Badge variant="outline">{formatToken(issue.status)}</Badge>
+            <Badge
+              variant={issue.priority === "urgent" ? "destructive" : "outline"}
+            >
               Priority {formatToken(issue.priority)}
-            </Pill>
+            </Badge>
           </div>
-          <h2 className="text-xl font-semibold tracking-normal">
+          <h2 className="font-heading font-semibold text-xl">
             {issue.summary}
           </h2>
-          <div className="mt-3 flex flex-wrap gap-2 text-[#686a64] text-sm">
+          <div className="mt-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
             {issue.affectedApps.map((app) => (
               <span key={app.clientKey}>{app.name}</span>
             ))}
@@ -306,20 +460,19 @@ function IssueRow({
           <SignalBox label="Items" value={issue.itemCount.toString()} />
         </div>
       </div>
-      <div className="mt-4 flex flex-col gap-3 border-[#eee8da] border-t pt-4 md:flex-row md:items-center md:justify-between">
+      <div className="mt-4 flex flex-col gap-3 border-t pt-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-2">
-          {issue.signalReasons.slice(0, 3).map((reason) => (
-            <span
-              className="inline-flex items-center gap-1 rounded-md bg-[#eef5ee] px-2 py-1 text-[#37584e] text-xs"
-              key={reason}
-            >
-              <CircleDot />
-              {reason}
-            </span>
-          ))}
+          {issue.signalReasons
+            .slice(0, VISIBLE_SIGNAL_REASON_COUNT)
+            .map((reason) => (
+              <Badge variant="secondary" key={reason}>
+                <CircleDot data-icon="inline-start" />
+                {reason}
+              </Badge>
+            ))}
         </div>
         <Link
-          className={buttonVariants({ variant: "outline" })}
+          className={cn(buttonVariants({ variant: "outline" }), "self-start")}
           href={`/dashboard/${issue._id}`}
         >
           Open
@@ -332,31 +485,10 @@ function IssueRow({
 
 function SignalBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-[#e5dece] bg-[#f7f5ef] px-3 py-2">
-      <div className="text-[#686a64] text-xs">{label}</div>
+    <div className="rounded-lg border bg-background px-3 py-2">
+      <div className="text-muted-foreground text-xs">{label}</div>
       <div className="font-semibold text-2xl">{value}</div>
     </div>
-  );
-}
-
-function Pill({
-  children,
-  tone = "neutral",
-}: {
-  children: React.ReactNode;
-  tone?: "neutral" | "green" | "red";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-7 items-center rounded-md border px-2 text-xs",
-        tone === "neutral" && "border-[#d8d1c1] bg-[#f7f5ef] text-[#514f49]",
-        tone === "green" && "border-[#a8cabe] bg-[#e7f3ee] text-[#1e5d54]",
-        tone === "red" && "border-[#e4b0a2] bg-[#fff0ec] text-[#9b321e]",
-      )}
-    >
-      {children}
-    </span>
   );
 }
 
@@ -364,27 +496,26 @@ function IssueListSkeleton() {
   const rows = ["first", "second", "third"];
 
   return (
-    <div className="grid gap-3">
+    <section className="grid gap-3">
       {rows.map((row) => (
-        <div
-          className="h-40 animate-pulse rounded-lg border border-[#ded8ca] bg-[#fffdf8]"
-          key={row}
-        />
+        <Skeleton className="h-40 rounded-lg" key={row} />
       ))}
-    </div>
+    </section>
   );
 }
 
 function EmptyIssues() {
   return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-[#ded8ca] bg-[#fffdf8] p-8 text-center">
-      <Inbox />
-      <h2 className="mt-3 font-semibold text-xl">No Feedback Issues yet</h2>
-      <p className="mt-2 max-w-md text-[#686a64] text-sm">
+    <section className="flex min-h-72 flex-col items-center justify-center rounded-lg border bg-card p-8 text-center text-card-foreground">
+      <Inbox className="text-muted-foreground" />
+      <h2 className="mt-3 font-heading font-semibold text-xl">
+        No Feedback Issues yet
+      </h2>
+      <p className="mt-2 max-w-md text-muted-foreground text-sm">
         Submit feedback from the demo Customer App, then come back here to see
         the first issue grouping.
       </p>
-    </div>
+    </section>
   );
 }
 

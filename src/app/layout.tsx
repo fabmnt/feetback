@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/app/convex-client-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -38,8 +39,10 @@ export default function RootLayout({
         inter.variable,
       )}
     >
-      <body className="min-h-full flex flex-col">
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+      <body className="flex min-h-full flex-col">
+        <TooltipProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
