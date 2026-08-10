@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "convex dev --start \"next dev\"",
+    "dev": "node scripts/dev.mjs",
     "build": "pnpm build:script && next build",
     "build:script": "node scripts/build-feetback.mjs",
     "start": "next start",
@@ -17,10 +17,10 @@
     "@base-ui/react": "^1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.41.0",
+    "convex": "^1.43.0",
     "html2canvas": "^1.4.1",
     "lucide-react": "^1.17.0",
-    "next": "16.2.9",
+    "next": "16.3.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.11.0",
@@ -40,7 +40,7 @@
     "esbuild": "^0.28.1",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.8"
   }
 }
