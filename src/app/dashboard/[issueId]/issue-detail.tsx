@@ -1,11 +1,13 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Clipboard, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { CopyButton } from "@/components/copy-button";
+import { buttonVariants } from "@/components/ui/button";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -33,7 +35,6 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
     issueId: issueId as Id<"feedbackIssues">,
   });
   const updateIssue = useMutation(api.dashboard.updateIssue);
-  const [copied, setCopied] = useState(false);
   const [updateError, setUpdateError] = useState("");
 
   const updateIssueField = async (
@@ -151,11 +152,9 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                   <div className="mb-2 flex flex-wrap gap-2 text-[#686a64] text-xs">
                     <span>{formatToken(item.type)}</span>
                     <span>{new Date(item.submittedAt).toLocaleString()}</span>
-                    {item.media.length > 0 ? (
-                      <span>{item.media.length} media metadata records</span>
-                    ) : null}
                   </div>
                   <p className="text-base">{item.content}</p>
+                  <ItemMedia media={item.media} />
                   {item.pageContext?.url ? (
                     <p className="mt-3 text-[#686a64] text-sm">
                       Page: {item.pageContext.url}
@@ -192,24 +191,68 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
             <pre className="mt-4 max-h-[560px] overflow-auto whitespace-pre-wrap rounded-md border border-[#e5dece] bg-[#191917] p-4 text-[#f7f5ef] text-sm">
               {issue.implementationPrompt}
             </pre>
-            <Button
+            <CopyButton
               className="mt-3 w-full"
-              onClick={async () => {
-                const didCopy = await copyText(issue.implementationPrompt);
-
-                if (didCopy) {
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1500);
-                }
-              }}
+              value={issue.implementationPrompt}
             >
-              <Clipboard data-icon="inline-start" />
-              {copied ? "Copied" : "Copy prompt"}
-            </Button>
+              Copy prompt
+            </CopyButton>
           </section>
         </aside>
       </section>
     </main>
+  );
+}
+
+type MediaEntry = {
+  kind: "screenshot" | "uploaded_image";
+  name?: string;
+  width?: number;
+  height?: number;
+  url: string | null;
+};
+
+const SCREENSHOT_FALLBACK_WIDTH = 1200;
+const SCREENSHOT_FALLBACK_HEIGHT = 750;
+
+function ItemMedia({ media }: { media: MediaEntry[] }) {
+  const withUrls = media.filter(
+    (entry): entry is MediaEntry & { url: string } => entry.url !== null,
+  );
+
+  if (withUrls.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 grid gap-2">
+      {withUrls.map((entry) =>
+        entry.kind === "screenshot" ? (
+          <Image
+            key={entry.url}
+            src={entry.url}
+            alt="Screenshot attached to this Feedback Item"
+            width={entry.width ?? SCREENSHOT_FALLBACK_WIDTH}
+            height={entry.height ?? SCREENSHOT_FALLBACK_HEIGHT}
+            sizes="(min-width: 1024px) 60vw, 100vw"
+            className="h-auto w-full rounded-md border border-[#e5dece]"
+          />
+        ) : (
+          <span
+            key={entry.url}
+            className="relative block h-24 w-24 overflow-hidden rounded-md border border-[#e5dece]"
+          >
+            <Image
+              src={entry.url}
+              alt={entry.name ?? "Uploaded image"}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          </span>
+        ),
+      )}
+    </div>
   );
 }
 
@@ -244,28 +287,4 @@ function EditSelect({
 
 function formatToken(value: string) {
   return value.replaceAll("_", " ");
-}
-
-async function copyText(text: string) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall back to the textarea copy path below.
-    }
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-
-  const didCopy = document.execCommand("copy");
-  textarea.remove();
-
-  return didCopy;
 }

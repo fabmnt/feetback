@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as customerApps from "../customerApps.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  customerApps: typeof customerApps;
   dashboard: typeof dashboard;
   feedback: typeof feedback;
 }>;

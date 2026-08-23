@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Feetback
 
-## Getting Started
+Feetback is a product for collecting, organizing, and reviewing feedback from users inside customer web applications.
 
-First, run the development server:
+The product has three main parts:
+
+- **Embeddable script** (`src/feetback`, built to `public/feetback.js`): a framework-free script Customers embed in their Customer App with a small settings snippet. It renders an isolated Script UI (Shadow DOM) with a feedback button and popover, captures an automatic screenshot, supports element selection and image uploads, and sends Feedback Submissions to the Feetback API.
+- **Customer dashboard** (`src/app/dashboard`): where Users review grouped Feedback Issues, inspect evidence including stored screenshots and uploaded images, copy an Implementation Prompt for coding agents, and manage Customer Apps (Client Keys, Allowed Origins, and the embed snippet).
+- **Landing page** (planned, `src/app/page.tsx`): the public marketing surface for the product.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # runs `convex dev` and `next dev` together
+pnpm build      # builds the embeddable script, then the Next.js app
+pnpm lint       # biome check
+pnpm format     # biome format
+pnpm typecheck
+pnpm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app requires `NEXT_PUBLIC_CONVEX_URL` pointing at a Convex deployment (set by `convex dev` in `.env.local`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Useful routes once the dev server is running:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/demo/customer-app` — demo Customer App with the script embedded through a real script tag.
+- `/dashboard` — Feetback dashboard reviewing the submitted feedback.
+- `/dashboard/settings` — manage Customer Apps, Client Keys, Allowed Origins, and embed snippets.
 
-## Learn More
+## Docs
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `CONTEXT.md` — product glossary and shared language.
+- `docs/adr` — accepted architecture decisions (Shadow DOM boundary, framework-free script runtime).
+- `docs/prd` — product requirements, starting with the embeddable script v1.

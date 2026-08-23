@@ -64,6 +64,7 @@ const elementContext = v.object({
 
 const mediaMetadata = v.object({
   kind: v.union(v.literal("screenshot"), v.literal("uploaded_image")),
+  storageId: v.optional(v.id("_storage")),
   name: v.optional(v.string()),
   contentType: v.optional(v.string()),
   size: v.optional(v.number()),

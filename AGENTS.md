@@ -36,3 +36,6 @@ Run the following commands to check your code changes:
 - `pnpm run format`
 - `pnpm run lint`
 - `pnpm run typecheck`
+
+## Glossary
+Read CONTEXT.md to get the glossary of concepts used in this project.

@@ -1,21 +1,7 @@
 "use client";
 
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
-import {
-  ArrowUpRight,
-  ChartNoAxesColumnIncreasing,
-  CircleDot,
-  ClipboardList,
-  Code2,
-  Inbox,
-  LayoutDashboard,
-  Megaphone,
-  Search,
-  Settings,
-  ShieldCheck,
-  Users,
-  Workflow,
-} from "lucide-react";
+import { ArrowUpRight, CircleDot, Inbox, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -31,26 +17,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { DashboardSidebar } from "./dashboard-sidebar";
 
 const ALL_CUSTOMER_APPS = "all-customer-apps";
 const ISSUE_PAGE_SIZE = 24;
@@ -79,19 +54,6 @@ const sortOptions = [
   ["recency", "Recent"],
   ["item_count", "Count"],
 ] as const;
-const dashboardLinks = [
-  { label: "Issues", href: "/dashboard", icon: LayoutDashboard, active: true },
-  { label: "Inbox", href: "#", icon: Inbox },
-  { label: "Roadmap", href: "#", icon: Workflow },
-  { label: "Announcements", href: "#", icon: Megaphone },
-  { label: "Customers", href: "#", icon: Users },
-  { label: "Install Script", href: "#", icon: Code2 },
-] as const;
-const adminLinks = [
-  { label: "Moderation", href: "#", icon: ShieldCheck },
-  { label: "Reports", href: "#", icon: ClipboardList },
-  { label: "Settings", href: "#", icon: Settings },
-] as const;
 
 type Status = (typeof statuses)[number];
 type Priority = (typeof priorities)[number];
@@ -106,7 +68,7 @@ export function DashboardIssues() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<Sort>("signal");
   const ensureDemoData = useMutation(api.feedback.ensureDemoData);
-  const apps = useQuery(api.dashboard.listCustomerApps);
+  const apps = useQuery(api.customerApps.list);
   const queryArgs = useMemo(
     () => ({
       customerAppId: customerAppId
@@ -247,83 +209,6 @@ export function DashboardIssues() {
         </SidebarInset>
       </SidebarProvider>
     </div>
-  );
-}
-
-function DashboardSidebar() {
-  return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Feetback" isActive>
-              <ChartNoAxesColumnIncreasing />
-              <span>Feetback</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {dashboardLinks.map((item) => (
-                <SidebarLink key={item.label} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <SidebarGroupLabel>Admin</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminLinks.map((item) => (
-                <SidebarLink key={item.label} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Demo workspace">
-              <CircleDot />
-              <span>Demo workspace</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  );
-}
-
-function SidebarLink({
-  item,
-}: {
-  item: {
-    label: string;
-    href: string;
-    icon: React.ComponentType;
-    active?: boolean;
-  };
-}) {
-  const Icon = item.icon;
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        render={<Link href={item.href} />}
-        isActive={item.active}
-        tooltip={item.label}
-      >
-        <Icon />
-        <span>{item.label}</span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
   );
 }
 

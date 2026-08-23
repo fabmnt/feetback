@@ -43,7 +43,7 @@ async function getDemoCustomerId(ctx: QueryCtx) {
   return customer._id;
 }
 
-async function getViewerCustomerId(ctx: QueryCtx) {
+export async function getViewerCustomerId(ctx: QueryCtx) {
   const identity = await ctx.auth.getUserIdentity();
 
   if (!identity) {
@@ -101,22 +101,6 @@ async function affectedAppsForIssue(
     }),
   ).then((apps) => apps.filter((app) => app !== null));
 }
-
-export const listCustomerApps = query({
-  args: {},
-  handler: async (ctx) => {
-    const customerId = await getViewerCustomerId(ctx);
-
-    if (!customerId) {
-      return [];
-    }
-
-    return await ctx.db
-      .query("customerApps")
-      .withIndex("by_customerId", (q) => q.eq("customerId", customerId))
-      .take(50);
-  },
-});
 
 export const listIssues = query({
   args: {
@@ -301,7 +285,7 @@ export const getIssue = query({
   },
   handler: async (ctx, args) => {
     const { issue } = await ensureIssueBelongsToViewer(ctx, args.issueId);
-    const items = await ctx.db
+    const itemDocs = await ctx.db
       .query("feedbackItems")
       .withIndex("by_issueId", (q) => q.eq("issueId", issue._id))
       .order("desc")
@@ -311,11 +295,27 @@ export const getIssue = query({
     return {
       issue,
       affectedApps: apps,
-      items,
-      implementationPrompt: buildImplementationPrompt(issue, items, apps),
+      items: await Promise.all(
+        itemDocs.map((item) => withMediaUrls(ctx, item)),
+      ),
+      implementationPrompt: buildImplementationPrompt(issue, itemDocs, apps),
     };
   },
 });
+
+// Storage files are served through signed URLs minted at query time, so media
+// entries are hydrated with a `url` field before reaching the dashboard.
+async function withMediaUrls(ctx: QueryCtx, item: Doc<"feedbackItems">) {
+  return {
+    ...item,
+    media: await Promise.all(
+      item.media.map(async (entry) => ({
+        ...entry,
+        url: entry.storageId ? await ctx.storage.getUrl(entry.storageId) : null,
+      })),
+    ),
+  };
+}
 
 export const updateIssue = mutation({
   args: {

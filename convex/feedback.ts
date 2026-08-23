@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation } from "./_generated/server";
 
@@ -48,7 +48,7 @@ const selectedElement = v.object({
 });
 
 const screenshot = v.object({
-  dataUrl: v.string(),
+  storageId: v.id("_storage"),
   capturedAt: v.string(),
   width: v.optional(v.number()),
   height: v.optional(v.number()),
@@ -58,13 +58,21 @@ const uploadedImage = v.object({
   name: v.string(),
   type: v.string(),
   size: v.number(),
-  dataUrl: v.string(),
+  storageId: v.id("_storage"),
 });
 
 export const ensureDemoData = mutation({
   args: {},
   handler: async (ctx) => {
     return await ensureDemoApp(ctx);
+  },
+});
+
+// ponytail: upload URLs are issued to anyone, rate-limit per Client Key before real production traffic.
+export const createMediaUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -90,14 +98,14 @@ export const submitPublic = mutation({
       (isDemoClientKey(args.clientKey) ? await ensureDemoApp(ctx) : null);
 
     if (!customerApp) {
-      throw new Error("Unknown Client Key.");
+      throw new ConvexError("Unknown Client Key.");
     }
 
     if (customerApp.allowedOrigins.length > 0) {
       const origin = args.requestOrigin?.trim();
 
       if (!origin || !customerApp.allowedOrigins.includes(origin)) {
-        throw new Error("Origin is not allowed for this Client Key.");
+        throw new ConvexError("Origin is not allowed for this Client Key.");
       }
     }
 
@@ -144,7 +152,9 @@ export const submitPublic = mutation({
     const issue = await ctx.db.get(issueId);
 
     if (!issue) {
-      throw new Error("Feedback Issue could not be loaded after creation.");
+      throw new ConvexError(
+        "Feedback Issue could not be loaded after creation.",
+      );
     }
 
     await ensureIssueCustomerAppLink(
@@ -186,7 +196,9 @@ export const submitPublic = mutation({
     const item = await ctx.db.get(itemId);
 
     if (!item) {
-      throw new Error("Feedback Item could not be loaded after creation.");
+      throw new ConvexError(
+        "Feedback Item could not be loaded after creation.",
+      );
     }
 
     return toPublicFeedbackItem(item);
@@ -228,7 +240,7 @@ async function ensureDemoApp(ctx: MutationCtx) {
   const app = await ctx.db.get(appId);
 
   if (!app) {
-    throw new Error("Demo Customer App could not be created.");
+    throw new ConvexError("Demo Customer App could not be created.");
   }
 
   return app;
@@ -272,14 +284,25 @@ function buildGroupingKey(content: string, type: string) {
 }
 
 function buildMediaMetadata(args: {
-  screenshot?: { capturedAt: string; width?: number; height?: number } | null;
-  uploadedImages?: Array<{ name: string; type: string; size: number }>;
+  screenshot?: {
+    storageId: Id<"_storage">;
+    capturedAt: string;
+    width?: number;
+    height?: number;
+  } | null;
+  uploadedImages?: Array<{
+    name: string;
+    type: string;
+    size: number;
+    storageId: Id<"_storage">;
+  }>;
 }) {
   return [
     ...(args.screenshot
       ? [
           {
             kind: "screenshot" as const,
+            storageId: args.screenshot.storageId,
             capturedAt: args.screenshot.capturedAt,
             width: args.screenshot.width,
             height: args.screenshot.height,
@@ -288,6 +311,7 @@ function buildMediaMetadata(args: {
       : []),
     ...(args.uploadedImages ?? []).map((image) => ({
       kind: "uploaded_image" as const,
+      storageId: image.storageId,
       name: image.name,
       contentType: image.type,
       size: image.size,
@@ -356,6 +380,7 @@ function toPublicFeedbackItem(item: Doc<"feedbackItems">) {
         name: media.name,
         type: media.contentType,
         size: media.size,
+        storageId: media.storageId,
       })),
     submittedAt: item.submittedAt,
   };
