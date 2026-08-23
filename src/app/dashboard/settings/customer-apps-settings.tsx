@@ -8,15 +8,10 @@ import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
-import { DashboardSidebar } from "../dashboard-sidebar";
 
 const FALLBACK_EMBED_ORIGIN = "https://your-feetback-domain";
 
@@ -40,43 +35,31 @@ export function CustomerAppsSettings() {
   }, [apps, ensureDemoData]);
 
   return (
-    <div className="min-h-svh bg-background text-foreground">
-      <SidebarProvider>
-        <DashboardSidebar />
-        <SidebarInset className="min-h-svh">
-          <header className="sticky top-0 border-b bg-background/95 backdrop-blur">
-            <div className="flex min-h-16 items-center gap-3 px-4 py-3 md:px-6">
-              <SidebarTrigger />
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Feetback dashboard
-                </p>
-                <h1 className="font-heading font-semibold text-2xl">
-                  Customer Apps
-                </h1>
-              </div>
-            </div>
-          </header>
+    <>
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center gap-2 px-4 py-3 md:px-6">
+          <SidebarTrigger />
+          <h1 className="truncate font-semibold text-xl">Customer Apps</h1>
+        </div>
+      </header>
 
-          <main className="flex flex-1 flex-col gap-5 px-4 py-5 md:px-6">
-            <CreateCustomerAppForm />
-            {apps === undefined ? (
-              <Skeleton className="h-64 rounded-lg" />
-            ) : (
-              <section className="grid gap-4">
-                {apps.map((app) => (
-                  <CustomerAppCard
-                    app={app}
-                    embedOrigin={embedOrigin || FALLBACK_EMBED_ORIGIN}
-                    key={app._id}
-                  />
-                ))}
-              </section>
-            )}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </div>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-5 md:px-6">
+        <CreateCustomerAppForm />
+        {apps === undefined ? (
+          <Skeleton className="h-64 rounded-lg" />
+        ) : (
+          <section className="divide-y">
+            {apps.map((app) => (
+              <CustomerAppSettings
+                app={app}
+                embedOrigin={embedOrigin || FALLBACK_EMBED_ORIGIN}
+                key={app._id}
+              />
+            ))}
+          </section>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -110,15 +93,13 @@ function CreateCustomerAppForm() {
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground">
-      <div>
-        <h2 className="font-heading font-semibold text-xl">New Customer App</h2>
-        <p className="mt-1 text-muted-foreground text-sm">
-          Each app gets its own Client Key, Allowed Origins, and embed snippet
-          for the Feetback script.
-        </p>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+    <section className="flex flex-col gap-2">
+      <h2 className="font-semibold text-lg">New Customer App</h2>
+      <p className="max-w-xl text-muted-foreground text-sm">
+        Each app gets its own Client Key, Allowed Origins, and embed snippet for
+        the Feetback script.
+      </p>
+      <div className="flex max-w-lg flex-col gap-2 sm:flex-row">
         <Input
           placeholder="App name, e.g. Acme Console"
           value={name}
@@ -134,7 +115,7 @@ function CreateCustomerAppForm() {
   );
 }
 
-function CustomerAppCard({
+function CustomerAppSettings({
   app,
   embedOrigin,
 }: {
@@ -178,7 +159,7 @@ function CustomerAppCard({
   const snippet = buildEmbedSnippet(app.clientKey, embedOrigin);
 
   return (
-    <section className="grid gap-4 rounded-lg border bg-card p-4 text-card-foreground lg:grid-cols-2">
+    <section className="grid gap-6 py-6 first:pt-0 lg:grid-cols-2">
       <div className="grid content-start gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -225,7 +206,7 @@ function CustomerAppCard({
           <p className="text-muted-foreground text-xs">Embed snippet</p>
           <CopyButton value={snippet}>Copy snippet</CopyButton>
         </div>
-        <pre className="overflow-auto rounded-md border bg-muted/50 p-3 font-mono text-xs whitespace-pre-wrap">
+        <pre className="overflow-auto rounded-lg bg-muted p-3 font-mono text-xs whitespace-pre-wrap">
           {snippet}
         </pre>
       </div>

@@ -10,6 +10,36 @@ export const FEEDBACK_TYPES = [
 
 export const UNCATEGORIZED_FEEDBACK_TYPE = "uncategorized";
 
+export const ISSUE_STATUSES = [
+  "open",
+  "planned",
+  "in_progress",
+  "resolved",
+  "closed",
+] as const;
+
+export const ISSUE_PRIORITIES = [
+  "unset",
+  "low",
+  "medium",
+  "high",
+  "urgent",
+] as const;
+
+export const FEEDBACK_TYPE_OPTIONS = [
+  ...FEEDBACK_TYPES,
+  UNCATEGORIZED_FEEDBACK_TYPE,
+] as const;
+
+export type IssueStatus = (typeof ISSUE_STATUSES)[number];
+export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
+export type FeedbackTypeOption = (typeof FEEDBACK_TYPE_OPTIONS)[number];
+
+/** Formats storage tokens like "bug_report" into display text like "bug report". */
+export function formatToken(value: string) {
+  return value.replaceAll("_", " ");
+}
+
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 export type FeedbackItemType =
   | FeedbackType
