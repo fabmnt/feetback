@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FEEDBACK_TYPE_OPTIONS,
@@ -87,7 +86,6 @@ export function DashboardIssues() {
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <SidebarTrigger />
             <h1 className="truncate font-semibold text-xl">Feedback Issues</h1>
           </div>
           <CustomerAppSelect

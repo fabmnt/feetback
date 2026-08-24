@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
@@ -38,7 +37,6 @@ export function CustomerAppsSettings() {
     <>
       <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center gap-2 px-4 py-3 md:px-6">
-          <SidebarTrigger />
           <h1 className="truncate font-semibold text-xl">Customer Apps</h1>
         </div>
       </header>
