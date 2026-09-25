@@ -34,6 +34,11 @@ const reporterIdentity = v.object({
   name: v.optional(v.string()),
 });
 
+const developmentContext = v.object({
+  branch: v.string(),
+  commit: v.string(),
+});
+
 const pageContext = v.object({
   url: v.optional(v.string()),
   title: v.optional(v.string()),
@@ -147,6 +152,7 @@ export default defineSchema({
     content: v.string(),
     type: feedbackType,
     reporterIdentity: v.optional(reporterIdentity),
+    developmentContext: v.optional(developmentContext),
     pageContext: v.optional(pageContext),
     selectedElement: v.optional(elementContext),
     media: v.array(mediaMetadata),

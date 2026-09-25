@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,27 @@ const FORCE_STOP_DELAY_MS = 3000;
 // Convex's `--start` command is detached on Windows, which opens another console.
 // Keeping both processes attached here makes their output stay in the current terminal.
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+function readGitValue(args) {
+  try {
+    return execFileSync("git", args, {
+      cwd: projectRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+const developmentEnvironment = {
+  ...process.env,
+  FEEDBACK_DEV_BRANCH:
+    process.env.FEEDBACK_DEV_BRANCH ||
+    readGitValue(["branch", "--show-current"]),
+  FEEDBACK_DEV_COMMIT:
+    process.env.FEEDBACK_DEV_COMMIT || readGitValue(["rev-parse", "HEAD"]),
+};
 const commands = [
   {
     command: resolve(projectRoot, "node_modules/convex/bin/main.js"),
@@ -23,6 +44,7 @@ const commands = [
 const children = commands.map(({ command, args }) =>
   spawn(process.execPath, [command, ...args], {
     cwd: projectRoot,
+    env: developmentEnvironment,
     stdio: "inherit",
     windowsHide: true,
   }),

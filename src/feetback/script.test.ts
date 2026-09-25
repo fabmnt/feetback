@@ -81,6 +81,10 @@ describe("Feetback script", () => {
       reporterIdentity: {
         id: "reporter_123",
       },
+      developmentContext: {
+        branch: "feature/renewal-table",
+        commit: "def5678",
+      },
     };
 
     await import("./script");
@@ -123,8 +127,38 @@ describe("Feetback script", () => {
       reporterIdentity: {
         id: "reporter_123",
       },
+      developmentContext: {
+        branch: "feature/renewal-table",
+        commit: "def5678",
+      },
     });
     expect(payload.pageContext.url).toEqual(expect.any(String));
+  });
+
+  it("omits development context when production settings do not provide it", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        Response.json({ id: "feedback_2" }, { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    window.FeetbackSettings = {
+      clientKey: "demo_customer_app",
+      apiUrl: "/api/feedback",
+    };
+
+    await import("./script");
+
+    const shadow = getShadowRoot();
+    window.feetback?.open();
+    enterFeedbackContent(shadow, "The production screen is confusing.");
+    shadow.querySelector<HTMLButtonElement>('[data-action="submit"]')?.click();
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    const init = fetchMock.mock.calls[0]?.[1];
+    const payload = JSON.parse(String(init?.body));
+
+    expect(payload).not.toHaveProperty("developmentContext");
   });
 
   it("does not submit when the client key is missing", async () => {

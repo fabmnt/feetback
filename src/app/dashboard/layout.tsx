@@ -1,4 +1,5 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { DashboardAuthGate } from "./dashboard-auth-gate";
 import { DashboardSidebar } from "./dashboard-sidebar";
 
 export default function DashboardLayout({
@@ -7,9 +8,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <DashboardSidebar />
-      <SidebarInset className="min-h-svh">{children}</SidebarInset>
-    </SidebarProvider>
+    <DashboardAuthGate>
+      <SidebarProvider>
+        <DashboardSidebar />
+        <SidebarInset className="min-h-svh">{children}</SidebarInset>
+      </SidebarProvider>
+    </DashboardAuthGate>
   );
 }

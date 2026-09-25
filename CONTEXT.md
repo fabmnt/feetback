@@ -136,6 +136,10 @@ _Avoid_: Inspect mode, picker
 Basic information about where a Feedback Item was sent from, such as page URL, viewport size, browser, device, and timestamp.
 _Avoid_: Metadata, telemetry
 
+**Development Context**:
+The source branch and commit that produced a locally tested Customer App build; production Feedback Items normally omit it.
+_Avoid_: Build metadata, deployment version
+
 **Privacy Mask**:
 A Customer-defined mark that prevents sensitive parts of a Customer App from appearing in screenshots or selected element details.
 _Avoid_: Redaction, hidden field

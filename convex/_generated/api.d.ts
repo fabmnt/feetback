@@ -11,6 +11,8 @@
 import type * as customerApps from "../customerApps.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
+import type * as http from "../http.js";
+import type * as rateLimit from "../rateLimit.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +24,8 @@ declare const fullApi: ApiFromModules<{
   customerApps: typeof customerApps;
   dashboard: typeof dashboard;
   feedback: typeof feedback;
+  http: typeof http;
+  rateLimit: typeof rateLimit;
 }>;
 
 /**
@@ -50,4 +54,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

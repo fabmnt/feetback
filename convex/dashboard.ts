@@ -1,5 +1,5 @@
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, type QueryCtx, query } from "./_generated/server";
 
@@ -29,6 +29,11 @@ const feedbackType = v.union(
   v.literal("other"),
   v.literal("uncategorized"),
 );
+
+const viewerUser = v.object({
+  customerId: v.id("customers"),
+  userId: v.id("users"),
+});
 
 async function getDemoCustomerId(ctx: QueryCtx) {
   const customer = await ctx.db
@@ -63,6 +68,71 @@ export async function getViewerCustomerId(ctx: QueryCtx) {
 
   return user.customerId;
 }
+
+export const currentUser = query({
+  args: {},
+  returns: v.union(viewerUser, v.null()),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      return null;
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
+      .unique();
+
+    return user ? { customerId: user.customerId, userId: user._id } : null;
+  },
+});
+
+export const ensureViewerUser = mutation({
+  args: {},
+  returns: viewerUser,
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new ConvexError("Authentication is required.");
+    }
+
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
+      .unique();
+
+    if (existingUser) {
+      return { customerId: existingUser.customerId, userId: existingUser._id };
+    }
+
+    const customerSlug = `customer-${identity.tokenIdentifier}`;
+    const existingCustomer = await ctx.db
+      .query("customers")
+      .withIndex("by_slug", (q) => q.eq("slug", customerSlug))
+      .unique();
+    const customerId =
+      existingCustomer?._id ??
+      (await ctx.db.insert("customers", {
+        name: identity.name?.trim() || identity.email?.trim() || "Customer",
+        slug: customerSlug,
+      }));
+
+    const userId = await ctx.db.insert("users", {
+      customerId,
+      tokenIdentifier: identity.tokenIdentifier,
+      ...(identity.email ? { email: identity.email } : {}),
+      ...(identity.name ? { name: identity.name } : {}),
+    });
+
+    return { customerId, userId };
+  },
+});
 
 async function ensureIssueBelongsToViewer(
   ctx: QueryCtx,
@@ -355,8 +425,11 @@ function buildImplementationPrompt(
             item.selectedElement.label ? `, ${item.selectedElement.label}` : ""
           }`
         : "";
+      const development = item.developmentContext
+        ? `\nBranch: ${item.developmentContext.branch}\nCommit: ${item.developmentContext.commit}`
+        : "";
 
-      return `${index + 1}. ${item.content}${page}${element}`;
+      return `${index + 1}. ${item.content}${page}${element}${development}`;
     })
     .join("\n\n");
 

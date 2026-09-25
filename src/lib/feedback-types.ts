@@ -51,6 +51,11 @@ export type ReporterIdentity = {
   name?: string;
 };
 
+export type DevelopmentContext = {
+  branch: string;
+  commit: string;
+};
+
 export type PageContext = {
   url?: string;
   title?: string;
@@ -94,6 +99,7 @@ export type FeedbackSubmission = {
   content: string;
   type?: FeedbackType | "";
   reporterIdentity?: ReporterIdentity;
+  developmentContext?: DevelopmentContext;
   pageContext?: PageContext;
   screenshot?: ScreenshotAttachment | null;
   selectedElement?: ElementContext | null;
@@ -106,6 +112,7 @@ export type FeedbackItem = {
   content: string;
   type: FeedbackItemType;
   reporterIdentity?: ReporterIdentity;
+  developmentContext?: DevelopmentContext;
   pageContext?: PageContext;
   screenshot?: ScreenshotAttachment | null;
   selectedElement?: ElementContext | null;

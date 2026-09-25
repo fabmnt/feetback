@@ -1,4 +1,5 @@
 import {
+  type DevelopmentContext,
   type ElementContext,
   FEEDBACK_TYPES,
   type FeedbackSubmission,
@@ -22,11 +23,19 @@ type FeetbackSettings = {
   clientKey: string;
   apiUrl?: string;
   reporterIdentity?: ReporterIdentity;
+  developmentContext?: DevelopmentContext;
   feedbackButton?: {
     enabled?: boolean;
     position?: FeedbackButtonPosition;
     label?: string;
   };
+};
+
+type NormalizedFeetbackSettings = Omit<
+  Required<FeetbackSettings>,
+  "developmentContext"
+> & {
+  developmentContext?: DevelopmentContext;
 };
 
 type FeetbackApi = {
@@ -406,6 +415,7 @@ export function initFeetbackScript(win: Window = window) {
       content: state.content.trim(),
       type: state.type,
       reporterIdentity: state.reporterIdentity,
+      developmentContext: settings.developmentContext,
       pageContext: {
         url: win.location.href,
         title: doc.title,
@@ -471,11 +481,12 @@ export function initFeetbackScript(win: Window = window) {
 
 function normalizeSettings(
   settings: FeetbackSettings | undefined,
-): Required<FeetbackSettings> {
+): NormalizedFeetbackSettings {
   return {
     clientKey: settings?.clientKey?.trim() || "",
     apiUrl: settings?.apiUrl || "/api/feedback",
     reporterIdentity: settings?.reporterIdentity || {},
+    developmentContext: settings?.developmentContext,
     feedbackButton: {
       enabled: settings?.feedbackButton?.enabled !== false,
       position:

@@ -123,6 +123,7 @@ function CustomerAppSettings({
   const updateCustomerApp = useMutation(api.customerApps.updateCustomerApp);
   const [name, setName] = useState(app.name);
   const [origins, setOrigins] = useState(app.allowedOrigins.join("\n"));
+  const hasAllowedOrigins = origins.trim().length > 0;
   const [status, setStatus] = useState<
     { kind: "idle" } | { kind: "saved" } | { kind: "error"; message: string }
   >({ kind: "idle" });
@@ -179,7 +180,7 @@ function CustomerAppSettings({
           htmlFor={`app-origins-${app._id}`}
         >
           <span className="text-muted-foreground">
-            Allowed Origins (one per line; leave empty to allow any origin)
+            Allowed Origins (one per line)
           </span>
           <textarea
             className="min-h-24 w-full rounded-2xl border border-transparent bg-input/50 px-2.5 py-1 font-mono text-sm outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
@@ -188,6 +189,16 @@ function CustomerAppSettings({
             value={origins}
             onChange={(event) => setOrigins(event.target.value)}
           />
+          {hasAllowedOrigins ? (
+            <p className="text-muted-foreground text-xs">
+              Only these origins can send feedback submissions.
+            </p>
+          ) : (
+            <p className="text-destructive text-xs">
+              No Allowed Origins are configured. Feedback submissions are
+              blocked until you add one.
+            </p>
+          )}
         </label>
         <div className="flex items-center gap-3">
           <Button onClick={() => void save()}>Save changes</Button>

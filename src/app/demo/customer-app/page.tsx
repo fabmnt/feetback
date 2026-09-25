@@ -3,6 +3,8 @@ export const metadata = {
 };
 
 export default function DemoCustomerAppPage() {
+  const developmentContext = serializeInlineValue(getDevelopmentContext());
+
   return (
     <main className="min-h-screen bg-[#f4f2ec] text-[#18201f]">
       <script
@@ -13,6 +15,7 @@ export default function DemoCustomerAppPage() {
           window.FeetbackSettings = {
             clientKey: "demo_customer_app",
             apiUrl: "/api/feedback",
+            developmentContext: ${developmentContext},
             reporterIdentity: {
               id: "reporter_123",
               email: "reporter@example.com",
@@ -180,4 +183,19 @@ export default function DemoCustomerAppPage() {
       </div>
     </main>
   );
+}
+
+function getDevelopmentContext() {
+  if (process.env.NODE_ENV !== "development") {
+    return undefined;
+  }
+
+  const branch = process.env.FEEDBACK_DEV_BRANCH?.trim();
+  const commit = process.env.FEEDBACK_DEV_COMMIT?.trim();
+
+  return branch && commit ? { branch, commit } : undefined;
+}
+
+function serializeInlineValue(value: unknown) {
+  return JSON.stringify(value)?.replaceAll("<", "\\u003c") ?? "undefined";
 }

@@ -241,6 +241,7 @@ function ItemContext({
     pageContext?: { url?: string };
     selectedElement?: { tagName: string; label?: string } | null;
     reporterIdentity?: { id?: string; email?: string; name?: string };
+    developmentContext?: { branch: string; commit: string };
   };
 }) {
   const reporter = [
@@ -255,6 +256,12 @@ function ItemContext({
       ? `Element: ${item.selectedElement.tagName}${
           item.selectedElement.label ? `, ${item.selectedElement.label}` : ""
         }`
+      : null,
+    item.developmentContext
+      ? `Branch: ${item.developmentContext.branch}`
+      : null,
+    item.developmentContext
+      ? `Commit: ${item.developmentContext.commit}`
       : null,
     reporter ? `Reporter: ${reporter}` : null,
   ].filter((part) => part !== null);

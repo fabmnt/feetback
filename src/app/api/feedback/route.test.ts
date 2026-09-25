@@ -1,9 +1,100 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MAX_DATA_URL_BYTES } from "../../../lib/feedback-contract";
-import { POST } from "./route";
+import { OPTIONS, POST } from "./route";
+
+beforeEach(() => {
+  vi.stubEnv("NODE_ENV", "test");
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe("POST /api/feedback", () => {
+  it("answers CORS preflight requests", async () => {
+    const response = await OPTIONS(
+      new Request("http://feetback.test/api/feedback", {
+        method: "OPTIONS",
+        headers: { Origin: "https://customer.example" },
+      }),
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      "https://customer.example",
+    );
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe(
+      "POST, OPTIONS",
+    );
+  });
+
+  it("fails closed when Convex storage is not configured", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_CONVEX_SITE_URL", "");
+
+    const response = await POST(
+      new Request("http://feetback.test/api/feedback", {
+        method: "POST",
+        headers: { Origin: "https://customer.example" },
+        body: JSON.stringify({
+          clientKey: "customer-app-demo",
+          content: "This must not be echoed in production.",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      errors: ["Feedback storage is not configured on this server."],
+    });
+  });
+
+  it("proxies valid submissions to the Convex HTTP endpoint", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv(
+      "NEXT_PUBLIC_CONVEX_SITE_URL",
+      "https://clever-flamingo.convex.site",
+    );
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "stored-feedback" }), {
+        status: 201,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": "6",
+        },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      new Request("http://feetback.test/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "https://customer.example",
+        },
+        body: JSON.stringify({
+          clientKey: "customer-app-demo",
+          content: "The save button feels hidden.",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: "stored-feedback" });
+    expect(response.headers.get("Retry-After")).toBe("6");
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL("https://clever-flamingo.convex.site/api/feedback"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Origin: "https://customer.example",
+        }),
+      }),
+    );
+  });
+
   it("echoes a valid Feedback Item entity", async () => {
     const response = await POST(
       new Request("http://feetback.test/api/feedback", {
@@ -12,6 +103,10 @@ describe("POST /api/feedback", () => {
           clientKey: "customer-app-demo",
           content: "The save button feels hidden.",
           type: "improvement_suggestion",
+          developmentContext: {
+            branch: "feature/save-button",
+            commit: "abc1234",
+          },
           reporterIdentity: {
             id: "reporter-1",
             email: "reporter@example.com",
@@ -53,6 +148,10 @@ describe("POST /api/feedback", () => {
       clientKey: "customer-app-demo",
       content: "The save button feels hidden.",
       type: "improvement_suggestion",
+      developmentContext: {
+        branch: "feature/save-button",
+        commit: "abc1234",
+      },
       reporterIdentity: {
         id: "reporter-1",
         email: "reporter@example.com",

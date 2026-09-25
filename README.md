@@ -20,7 +20,31 @@ pnpm typecheck
 pnpm test
 ```
 
-The app requires `NEXT_PUBLIC_CONVEX_URL` pointing at a Convex deployment (set by `convex dev` in `.env.local`).
+The app requires these public environment variables:
+
+- `NEXT_PUBLIC_CONVEX_URL` points at the Convex deployment.
+- `NEXT_PUBLIC_CONVEX_SITE_URL` points at the Convex HTTP site URL.
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` enables Clerk authentication for the Dashboard.
+
+`convex dev` sets the two Convex variables in `.env.local`. Add the Clerk publishable key from the Clerk instance configured in `convex/auth.config.ts`. Without that key, the Dashboard stays in demo mode.
+
+When `pnpm dev` starts, the built-in demo Customer App automatically includes the current Git branch and full commit hash in each Feedback Item. For another Customer App tested locally, include the source revision in the script settings:
+
+```js
+window.FeetbackSettings = {
+  clientKey: "your-client-key",
+  developmentContext: {
+    branch: "feature/feedback-context",
+    commit: "0123456789abcdef0123456789abcdef01234567"
+  }
+};
+```
+
+Production settings can omit `developmentContext`.
+
+New Customer Apps start with no Allowed Origins and reject feedback until at least one origin is saved in Dashboard Settings.
+
+Feedback submissions are limited to 10 per minute per Client Key, with a burst capacity of 3. Limited requests return HTTP `429` and a `Retry-After` header.
 
 Useful routes once the dev server is running:
 

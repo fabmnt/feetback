@@ -1,6 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  type MutationCtx,
+  mutation,
+} from "./_generated/server";
+import { feedbackRateLimiter } from "./rateLimit";
 
 const feedbackType = v.union(
   v.literal("bug_report"),
@@ -17,6 +23,11 @@ const reporterIdentity = v.object({
   id: v.optional(v.string()),
   email: v.optional(v.string()),
   name: v.optional(v.string()),
+});
+
+const developmentContext = v.object({
+  branch: v.string(),
+  commit: v.string(),
 });
 
 const pageContext = v.object({
@@ -61,53 +72,122 @@ const uploadedImage = v.object({
   storageId: v.id("_storage"),
 });
 
+const mediaMetadata = v.object({
+  kind: v.union(v.literal("screenshot"), v.literal("uploaded_image")),
+  storageId: v.optional(v.id("_storage")),
+  name: v.optional(v.string()),
+  contentType: v.optional(v.string()),
+  size: v.optional(v.number()),
+  width: v.optional(v.number()),
+  height: v.optional(v.number()),
+  capturedAt: v.optional(v.string()),
+});
+
+const publicFeedbackItem = v.object({
+  id: v.id("feedbackItems"),
+  clientKey: v.string(),
+  content: v.string(),
+  type: feedbackType,
+  reporterIdentity: v.optional(reporterIdentity),
+  developmentContext: v.optional(developmentContext),
+  pageContext: v.optional(pageContext),
+  screenshot: v.union(mediaMetadata, v.null()),
+  selectedElement: v.union(selectedElement, v.null()),
+  uploadedImages: v.array(
+    v.object({
+      name: v.optional(v.string()),
+      type: v.optional(v.string()),
+      size: v.optional(v.number()),
+      storageId: v.optional(v.id("_storage")),
+    }),
+  ),
+  submittedAt: v.string(),
+});
+
 export const ensureDemoData = mutation({
   args: {},
+  returns: v.union(v.id("customerApps"), v.null()),
   handler: async (ctx) => {
-    return await ensureDemoApp(ctx);
+    if (await ctx.auth.getUserIdentity()) {
+      return null;
+    }
+
+    return (await ensureDemoApp(ctx))._id;
   },
 });
 
-// ponytail: upload URLs are issued to anyone, rate-limit per Client Key before real production traffic.
-export const createMediaUploadUrl = mutation({
+export const ensureDemoDataInternal = internalMutation({
   args: {},
+  returns: v.id("customerApps"),
   handler: async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
+    return (await ensureDemoApp(ctx))._id;
   },
 });
 
-export const submitPublic = mutation({
+export const validateSubmissionTarget = internalQuery({
+  args: {
+    clientKey: v.string(),
+    requestOrigin: v.optional(v.union(v.string(), v.null())),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const clientKey = normalizeClientKey(args.clientKey);
+    const customerApp = await ctx.db
+      .query("customerApps")
+      .withIndex("by_clientKey", (q) => q.eq("clientKey", clientKey))
+      .unique();
+
+    if (!customerApp) {
+      return false;
+    }
+
+    assertAllowedOrigin(customerApp.allowedOrigins, args.requestOrigin);
+    return true;
+  },
+});
+
+export const consumeRateLimit = internalMutation({
+  args: { clientKey: v.string() },
+  returns: v.object({
+    ok: v.boolean(),
+    retryAfter: v.optional(v.number()),
+  }),
+  handler: async (ctx, args) => {
+    return await feedbackRateLimiter.limit(ctx, "feedbackSubmission", {
+      key: normalizeClientKey(args.clientKey),
+    });
+  },
+});
+
+export const submit = internalMutation({
   args: {
     clientKey: v.string(),
     content: v.string(),
     type: feedbackType,
     reporterIdentity: v.optional(reporterIdentity),
+    developmentContext: v.optional(developmentContext),
     pageContext: v.optional(pageContext),
     screenshot: v.optional(v.union(screenshot, v.null())),
     selectedElement: v.optional(v.union(selectedElement, v.null())),
     uploadedImages: v.optional(v.array(uploadedImage)),
     requestOrigin: v.optional(v.union(v.string(), v.null())),
   },
+  returns: publicFeedbackItem,
   handler: async (ctx, args) => {
     const submittedAt = new Date().toISOString();
+    const clientKey = normalizeClientKey(args.clientKey);
     const customerApp =
       (await ctx.db
         .query("customerApps")
-        .withIndex("by_clientKey", (q) => q.eq("clientKey", args.clientKey))
+        .withIndex("by_clientKey", (q) => q.eq("clientKey", clientKey))
         .unique()) ??
-      (isDemoClientKey(args.clientKey) ? await ensureDemoApp(ctx) : null);
+      (isDemoClientKey(clientKey) ? await ensureDemoApp(ctx) : null);
 
     if (!customerApp) {
       throw new ConvexError("Unknown Client Key.");
     }
 
-    if (customerApp.allowedOrigins.length > 0) {
-      const origin = args.requestOrigin?.trim();
-
-      if (!origin || !customerApp.allowedOrigins.includes(origin)) {
-        throw new ConvexError("Origin is not allowed for this Client Key.");
-      }
-    }
+    assertAllowedOrigin(customerApp.allowedOrigins, args.requestOrigin);
 
     const groupingKey = buildGroupingKey(args.content, args.type);
     const existingIssue = await ctx.db
@@ -139,10 +219,11 @@ export const submitPublic = mutation({
       customerId: customerApp.customerId,
       customerAppId: customerApp._id,
       issueId,
-      clientKey: args.clientKey,
+      clientKey,
       content: args.content,
       type: args.type,
       reporterIdentity: args.reporterIdentity,
+      developmentContext: args.developmentContext,
       pageContext: args.pageContext,
       selectedElement: args.selectedElement ?? undefined,
       media: buildMediaMetadata(args),
@@ -271,7 +352,28 @@ async function ensureIssueCustomerAppLink(
 }
 
 function isDemoClientKey(clientKey: string) {
-  return clientKey === "demo_customer_app" || clientKey === "customer-app-demo";
+  return clientKey === "demo_customer_app";
+}
+
+function normalizeClientKey(clientKey: string) {
+  return clientKey === "customer-app-demo" ? "demo_customer_app" : clientKey;
+}
+
+function assertAllowedOrigin(
+  allowedOrigins: string[],
+  requestOrigin: string | null | undefined,
+) {
+  if (allowedOrigins.length === 0) {
+    throw new ConvexError(
+      "No Allowed Origins are configured for this Customer App.",
+    );
+  }
+
+  const origin = requestOrigin?.trim();
+
+  if (!origin || !allowedOrigins.includes(origin)) {
+    throw new ConvexError("Origin is not allowed for this Client Key.");
+  }
 }
 
 function summarizeContent(content: string) {
@@ -371,6 +473,7 @@ function toPublicFeedbackItem(item: Doc<"feedbackItems">) {
     content: item.content,
     type: item.type,
     reporterIdentity: item.reporterIdentity,
+    developmentContext: item.developmentContext,
     pageContext: item.pageContext,
     screenshot: item.media.find((media) => media.kind === "screenshot") ?? null,
     selectedElement: item.selectedElement ?? null,

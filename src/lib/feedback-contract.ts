@@ -103,6 +103,13 @@ export const feedbackSubmissionSchema = z
     content: z.string().trim().min(1, "content is required."),
     type: z.string().trim().optional(),
     reporterIdentity: reporterIdentitySchema.optional(),
+    developmentContext: z
+      .object({
+        branch: z.string().trim().min(1),
+        commit: z.string().trim().min(1),
+      })
+      .strict()
+      .optional(),
     pageContext: pageContextSchema.optional(),
     screenshot: screenshotSchema.nullish(),
     selectedElement: selectedElementSchema.nullish(),
@@ -188,6 +195,7 @@ export function createFeedbackItem(
     content: submission.content,
     type: normalizeFeedbackType(submission.type),
     reporterIdentity: submission.reporterIdentity,
+    developmentContext: submission.developmentContext,
     pageContext: submission.pageContext,
     screenshot: submission.screenshot ?? null,
     selectedElement: submission.selectedElement ?? null,
