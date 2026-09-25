@@ -1,7 +1,4 @@
-import {
-  createFeedbackItem,
-  validateFeedbackSubmission,
-} from "@/lib/feedback-contract";
+import { validateFeedbackSubmission } from "@/lib/feedback-contract";
 
 const STORAGE_UNAVAILABLE_MESSAGE =
   "Feedback could not be saved. Please try again.";
@@ -33,13 +30,6 @@ export async function POST(request: Request) {
 
   if (!validation.ok) {
     return jsonResponse({ errors: validation.errors }, 400, origin);
-  }
-
-  if (process.env.NODE_ENV === "test") {
-    return Response.json(createFeedbackItem(validation.submission), {
-      status: 201,
-      headers: corsHeaders(origin),
-    });
   }
 
   const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_SITE_URL;

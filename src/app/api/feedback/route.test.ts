@@ -1,11 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MAX_DATA_URL_BYTES } from "../../../lib/feedback-contract";
 import { OPTIONS, POST } from "./route";
-
-beforeEach(() => {
-  vi.stubEnv("NODE_ENV", "test");
-});
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -31,7 +27,6 @@ describe("POST /api/feedback", () => {
   });
 
   it("fails closed when Convex storage is not configured", async () => {
-    vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("NEXT_PUBLIC_CONVEX_SITE_URL", "");
 
     const response = await POST(
@@ -52,7 +47,6 @@ describe("POST /api/feedback", () => {
   });
 
   it("proxies valid submissions to the Convex HTTP endpoint", async () => {
-    vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv(
       "NEXT_PUBLIC_CONVEX_SITE_URL",
       "https://clever-flamingo.convex.site",
@@ -93,100 +87,6 @@ describe("POST /api/feedback", () => {
         }),
       }),
     );
-  });
-
-  it("echoes a valid Feedback Item entity", async () => {
-    const response = await POST(
-      new Request("http://feetback.test/api/feedback", {
-        method: "POST",
-        body: JSON.stringify({
-          clientKey: "customer-app-demo",
-          content: "The save button feels hidden.",
-          type: "improvement_suggestion",
-          developmentContext: {
-            branch: "feature/save-button",
-            commit: "abc1234",
-          },
-          reporterIdentity: {
-            id: "reporter-1",
-            email: "reporter@example.com",
-          },
-          pageContext: {
-            url: "https://customer.example/settings",
-            viewport: {
-              width: 1280,
-              height: 720,
-            },
-          },
-          selectedElement: {
-            tagName: "button",
-            label: "Save changes",
-            selectorPath: "main > button:nth-of-type(1)",
-            boundingBox: {
-              x: 24,
-              y: 48,
-              width: 180,
-              height: 44,
-            },
-          },
-          uploadedImages: [
-            {
-              name: "annotated.png",
-              type: "image/png",
-              size: 42,
-              dataUrl: "data:image/png;base64,aGVsbG8=",
-            },
-          ],
-        }),
-      }),
-    );
-
-    const item = await response.json();
-
-    expect(response.status).toBe(201);
-    expect(item).toMatchObject({
-      clientKey: "customer-app-demo",
-      content: "The save button feels hidden.",
-      type: "improvement_suggestion",
-      developmentContext: {
-        branch: "feature/save-button",
-        commit: "abc1234",
-      },
-      reporterIdentity: {
-        id: "reporter-1",
-        email: "reporter@example.com",
-      },
-      selectedElement: {
-        tagName: "button",
-        label: "Save changes",
-      },
-      uploadedImages: [
-        {
-          name: "annotated.png",
-          type: "image/png",
-          size: 42,
-        },
-      ],
-    });
-    expect(item.id).toEqual(expect.any(String));
-    expect(item.submittedAt).toEqual(expect.any(String));
-  });
-
-  it("uses Uncategorized when Feedback Type is omitted", async () => {
-    const response = await POST(
-      new Request("http://feetback.test/api/feedback", {
-        method: "POST",
-        body: JSON.stringify({
-          clientKey: "customer-app-demo",
-          content: "Something feels off.",
-        }),
-      }),
-    );
-
-    const item = await response.json();
-
-    expect(response.status).toBe(201);
-    expect(item.type).toBe("uncategorized");
   });
 
   it("returns useful failures for invalid required data", async () => {

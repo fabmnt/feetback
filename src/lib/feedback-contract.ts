@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import {
   FEEDBACK_TYPES,
-  type FeedbackItem,
   type FeedbackItemType,
   type FeedbackSubmission,
   UNCATEGORIZED_FEEDBACK_TYPE,
@@ -183,23 +182,4 @@ export function validateFeedbackSubmission(
   }
 
   return { ok: true, submission: result.data };
-}
-
-export function createFeedbackItem(
-  submission: FeedbackSubmission,
-  options: { submittedAt?: string } = {},
-): FeedbackItem {
-  return {
-    id: crypto.randomUUID(),
-    clientKey: submission.clientKey,
-    content: submission.content,
-    type: normalizeFeedbackType(submission.type),
-    reporterIdentity: submission.reporterIdentity,
-    developmentContext: submission.developmentContext,
-    pageContext: submission.pageContext,
-    screenshot: submission.screenshot ?? null,
-    selectedElement: submission.selectedElement ?? null,
-    uploadedImages: submission.uploadedImages ?? [],
-    submittedAt: options.submittedAt ?? new Date().toISOString(),
-  };
 }

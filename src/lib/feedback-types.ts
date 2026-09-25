@@ -105,17 +105,3 @@ export type FeedbackSubmission = {
   selectedElement?: ElementContext | null;
   uploadedImages?: UploadedImage[];
 };
-
-export type FeedbackItem = {
-  id: string;
-  clientKey: string;
-  content: string;
-  type: FeedbackItemType;
-  reporterIdentity?: ReporterIdentity;
-  developmentContext?: DevelopmentContext;
-  pageContext?: PageContext;
-  screenshot?: ScreenshotAttachment | null;
-  selectedElement?: ElementContext | null;
-  uploadedImages: UploadedImage[];
-  submittedAt: string;
-};

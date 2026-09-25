@@ -120,6 +120,84 @@ describe("Convex feedback ingestion", () => {
     });
   });
 
+  it("returns the stored Feedback Item and defaults its Feedback Type", async () => {
+    const t = createTestConvex();
+
+    await t.run(async (ctx) => {
+      const customerId = await ctx.db.insert("customers", {
+        name: "Response Customer",
+        slug: "response-customer",
+      });
+      await ctx.db.insert("customerApps", {
+        customerId,
+        name: "Response App",
+        clientKey: "fbk_response",
+        allowedOrigins: ["https://customer.example"],
+      });
+    });
+
+    const response = await t.fetch("/api/feedback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://customer.example",
+      },
+      body: JSON.stringify({
+        clientKey: "fbk_response",
+        content: "The save button feels hidden.",
+        reporterIdentity: {
+          id: "reporter-1",
+          email: "reporter@example.com",
+        },
+        pageContext: {
+          url: "https://customer.example/settings",
+        },
+        selectedElement: {
+          tagName: "button",
+          label: "Save changes",
+        },
+        uploadedImages: [
+          {
+            name: "annotated.png",
+            type: "image/png",
+            size: 42,
+            dataUrl: "data:image/png;base64,aGVsbG8=",
+          },
+        ],
+      }),
+    });
+
+    expect(response.status).toBe(201);
+    const item = await response.json();
+
+    expect(item).toMatchObject({
+      clientKey: "fbk_response",
+      content: "The save button feels hidden.",
+      type: "uncategorized",
+      reporterIdentity: {
+        id: "reporter-1",
+        email: "reporter@example.com",
+      },
+      pageContext: {
+        url: "https://customer.example/settings",
+      },
+      selectedElement: {
+        tagName: "button",
+        label: "Save changes",
+      },
+      screenshot: null,
+      uploadedImages: [
+        {
+          name: "annotated.png",
+          type: "image/png",
+          size: 42,
+        },
+      ],
+    });
+    expect(item.id).toEqual(expect.any(String));
+    expect(item.submittedAt).toEqual(expect.any(String));
+  });
+
   it("rejects a Client Key used from an unapproved origin", async () => {
     const t = createTestConvex();
 
