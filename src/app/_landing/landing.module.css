@@ -1,0 +1,207 @@
+/* Landing page palette. Each Feedback Type keeps one sticker color everywhere. */
+.page {
+  --lp-ink: #1f1147;
+  --lp-ink-soft: #4a3f73;
+  --lp-paper: #f7f4ff;
+  --lp-grape: #6b3cf6;
+  --lp-grape-deep: #4b1fd1;
+  --lp-sun: #ffc933;
+  --lp-pink: #ff4f7b;
+  --lp-sky: #38b6ff;
+  --lp-mint: #1fcf98;
+  --lp-line: #e3dafc;
+
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+  color-scheme: light;
+  font-family: var(--font-bricolage), system-ui, sans-serif;
+  font-optical-sizing: auto;
+}
+
+.page :focus-visible {
+  outline: 3px solid var(--lp-sun);
+  outline-offset: 3px;
+}
+
+.headline {
+  font-stretch: 86%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  line-height: 0.92;
+}
+
+/* Feedback Popover notes: four notes share one 12s loop, 3s each. */
+.popoverNote {
+  animation: note-cycle 12s infinite both;
+  animation-delay: calc(var(--i) * 3s);
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.typed {
+  animation: type-in 12s infinite both;
+  animation-delay: calc(var(--i) * 3s);
+  display: inline-block;
+}
+
+/* The type sticker appears once the note is fully typed. */
+.typedSticker {
+  animation: sticker-in 3s infinite both;
+}
+
+.sendButton {
+  animation: press 3s infinite;
+}
+
+.feedbackButton {
+  animation: bob 3s ease-in-out infinite;
+}
+
+.feedTrack {
+  animation: feed-scroll 32s linear infinite;
+}
+
+.footstep {
+  animation: step 2.4s infinite both;
+  animation-delay: calc(var(--i) * 0.3s);
+  opacity: 0;
+}
+
+.liveDot {
+  animation: pulse 1.6s ease-out infinite;
+}
+
+/* Integer custom property so the CSS counter can tick up without JavaScript. */
+@property --lp-count {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 1248;
+}
+
+.counter {
+  animation: count-up 180s linear infinite;
+  counter-reset: lp-count var(--lp-count);
+}
+
+.counter::after {
+  content: counter(lp-count);
+}
+
+@keyframes note-cycle {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  3%,
+  22% {
+    opacity: 1;
+    transform: none;
+  }
+  25%,
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes type-in {
+  0%,
+  2% {
+    clip-path: inset(0 100% 0 0);
+  }
+  14%,
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes sticker-in {
+  0%,
+  50% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes press {
+  0%,
+  58%,
+  70%,
+  100% {
+    transform: none;
+  }
+  64% {
+    transform: scale(0.88);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes feed-scroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes step {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  50% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(31 207 152 / 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgb(31 207 152 / 0);
+  }
+}
+
+@keyframes count-up {
+  to {
+    --lp-count: 1348;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popoverNote,
+  .typed,
+  .typedSticker,
+  .sendButton,
+  .feedbackButton,
+  .feedTrack,
+  .footstep,
+  .liveDot,
+  .counter {
+    animation: none;
+  }
+
+  .popoverNote:first-child,
+  .footstep {
+    opacity: 1;
+  }
+}

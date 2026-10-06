@@ -19,11 +19,46 @@ import {
 
 type FeedbackButtonPosition = "bottom-right" | "bottom-left";
 
+/**
+ * Optional look of the Script UI. Every key is a CSS value (for example
+ * "#123b36" or "8px") and falls back to the default Feetback look.
+ */
+type FeetbackTheme = {
+  accent?: string;
+  accentHover?: string;
+  accentText?: string;
+  highlight?: string;
+  text?: string;
+  textSoft?: string;
+  surface?: string;
+  surfaceRaised?: string;
+  border?: string;
+  radius?: string;
+  buttonRadius?: string;
+  fontFamily?: string;
+};
+
+const THEME_CSS_VARIABLES: Record<keyof FeetbackTheme, string> = {
+  accent: "--fb-accent",
+  accentHover: "--fb-accent-hover",
+  accentText: "--fb-accent-text",
+  highlight: "--fb-highlight",
+  text: "--fb-text",
+  textSoft: "--fb-text-soft",
+  surface: "--fb-surface",
+  surfaceRaised: "--fb-surface-raised",
+  border: "--fb-border",
+  radius: "--fb-radius",
+  buttonRadius: "--fb-button-radius",
+  fontFamily: "--fb-font-family",
+};
+
 type FeetbackSettings = {
   clientKey: string;
   apiUrl?: string;
   reporterIdentity?: ReporterIdentity;
   developmentContext?: DevelopmentContext;
+  theme?: FeetbackTheme;
   feedbackButton?: {
     enabled?: boolean;
     position?: FeedbackButtonPosition;
@@ -90,6 +125,7 @@ export function initFeetbackScript(win: Window = window) {
   const host = doc.createElement("div");
   host.id = HOST_ID;
   const shadow = host.attachShadow({ mode: "open" });
+  applyTheme(host, win.FeetbackSettings?.theme);
   doc.body.append(host);
 
   const state = {
@@ -147,7 +183,7 @@ export function initFeetbackScript(win: Window = window) {
                     <p class="eyebrow">Feetback</p>
                     <h2>Send feedback</h2>
                   </div>
-                  <button class="icon-button" data-action="close" type="button" aria-label="Close">x</button>
+                  <button class="icon-button" data-action="close" type="button" aria-label="Close">&times;</button>
                 </header>
 
                 <label class="field">
@@ -479,6 +515,16 @@ export function initFeetbackScript(win: Window = window) {
   return api;
 }
 
+function applyTheme(host: HTMLElement, theme: FeetbackTheme | undefined) {
+  for (const [key, cssVariable] of Object.entries(THEME_CSS_VARIABLES)) {
+    const value = theme?.[key as keyof FeetbackTheme];
+
+    if (typeof value === "string" && value.trim()) {
+      host.style.setProperty(cssVariable, value.trim());
+    }
+  }
+}
+
 function normalizeSettings(
   settings: FeetbackSettings | undefined,
 ): NormalizedFeetbackSettings {
@@ -487,6 +533,7 @@ function normalizeSettings(
     apiUrl: settings?.apiUrl || "/api/feedback",
     reporterIdentity: settings?.reporterIdentity || {},
     developmentContext: settings?.developmentContext,
+    theme: settings?.theme || {},
     feedbackButton: {
       enabled: settings?.feedbackButton?.enabled !== false,
       position:
@@ -570,8 +617,22 @@ function escapeHtml(value: string | undefined) {
 
 const styles = `
   :host {
+    --fb-accent: #6b3cf6;
+    --fb-accent-hover: #4b1fd1;
+    --fb-accent-text: #ffffff;
+    --fb-highlight: #ffc933;
+    --fb-text: #1f1147;
+    --fb-text-soft: #4a3f73;
+    --fb-surface: #f7f4ff;
+    --fb-surface-raised: #ffffff;
+    --fb-border: #d8cdfa;
+    --fb-radius: 24px;
+    --fb-button-radius: 999px;
+    --fb-danger: #b42318;
+    --fb-success: #1d7f40;
+    --fb-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color-scheme: light;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--fb-font-family);
   }
 
   * {
@@ -599,34 +660,46 @@ const styles = `
   .feedback-button,
   .submit-button {
     appearance: none;
-    background: #123b36;
+    background: var(--fb-accent);
     border: 0;
-    border-radius: 999px;
-    box-shadow: 0 16px 40px rgba(18, 59, 54, 0.28);
-    color: #ffffff;
+    border-radius: var(--fb-button-radius);
+    box-shadow: 0 12px 32px -12px var(--fb-accent);
+    color: var(--fb-accent-text);
     cursor: pointer;
     font: inherit;
-    font-weight: 750;
+    font-weight: 800;
     min-height: 44px;
-    padding: 0 18px;
+    padding: 0 20px;
+    transition: background-color 120ms;
   }
 
   .feedback-button:hover,
   .submit-button:hover:not(:disabled) {
-    background: #0d2f2b;
+    background: var(--fb-accent-hover);
+  }
+
+  .feedback-button:focus-visible,
+  .submit-button:focus-visible,
+  .icon-button:focus-visible,
+  .ghost-button:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  input:focus-visible {
+    outline: 3px solid var(--fb-highlight);
+    outline-offset: 2px;
   }
 
   .feedback-popover {
-    background: #fbfaf7;
-    border: 1px solid rgba(18, 59, 54, 0.14);
-    border-radius: 8px;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
-    color: #17201f;
+    background: var(--fb-surface);
+    border: 1px solid var(--fb-border);
+    border-radius: var(--fb-radius);
+    box-shadow: 0 24px 60px -24px rgba(15, 23, 42, 0.45);
+    color: var(--fb-text);
     display: grid;
-    gap: 12px;
+    gap: 14px;
     max-height: min(720px, calc(100vh - 96px));
     overflow: auto;
-    padding: 14px;
+    padding: 18px;
     width: min(380px, calc(100vw - 32px));
   }
 
@@ -640,29 +713,36 @@ const styles = `
   }
 
   .eyebrow {
-    color: #1d9a8a;
+    color: var(--fb-accent);
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0;
-    margin: 0 0 2px;
+    margin: 0 0 4px;
     text-transform: uppercase;
   }
 
   h2 {
-    font-size: 18px;
-    line-height: 1.15;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
     margin: 0;
   }
 
   .icon-button,
   .ghost-button {
     appearance: none;
-    background: #ffffff;
-    border: 1px solid rgba(18, 59, 54, 0.16);
-    border-radius: 6px;
-    color: #17201f;
+    background: var(--fb-surface-raised);
+    border: 1px solid var(--fb-border);
+    border-radius: var(--fb-button-radius);
+    color: var(--fb-text);
     cursor: pointer;
     font: inherit;
+    font-weight: 600;
+  }
+
+  .icon-button:hover,
+  .ghost-button:hover {
+    background: var(--fb-highlight);
   }
 
   .icon-button {
@@ -671,8 +751,9 @@ const styles = `
   }
 
   .ghost-button {
+    font-size: 13px;
     min-height: 32px;
-    padding: 0 10px;
+    padding: 0 12px;
   }
 
   .field {
@@ -689,18 +770,31 @@ const styles = `
   textarea,
   select,
   input[type="file"] {
-    background: #ffffff;
-    border: 1px solid rgba(18, 59, 54, 0.16);
-    border-radius: 6px;
-    color: #17201f;
+    background: var(--fb-surface-raised);
+    border: 1px solid var(--fb-border);
+    border-radius: calc(var(--fb-radius) / 2);
+    color: var(--fb-text);
     font: inherit;
     min-width: 0;
-    padding: 10px;
+    padding: 10px 12px;
     width: 100%;
   }
 
   textarea {
     resize: vertical;
+  }
+
+  input[type="file"]::file-selector-button {
+    background: var(--fb-surface);
+    border: 1px solid var(--fb-border);
+    border-radius: var(--fb-button-radius);
+    color: var(--fb-text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 10px;
+    padding: 4px 12px;
   }
 
   .context-grid {
@@ -710,9 +804,9 @@ const styles = `
   }
 
   .context-panel {
-    background: #ffffff;
-    border: 1px solid rgba(18, 59, 54, 0.12);
-    border-radius: 8px;
+    background: var(--fb-surface-raised);
+    border: 1px solid var(--fb-border);
+    border-radius: calc(var(--fb-radius) / 2);
     display: grid;
     gap: 10px;
     min-width: 0;
@@ -729,14 +823,14 @@ const styles = `
   .status,
   .error-text,
   figcaption {
-    color: #65706d;
+    color: var(--fb-text-soft);
     font-size: 12px;
     line-height: 1.35;
   }
 
   .screenshot-preview {
     aspect-ratio: 16 / 9;
-    border-radius: 6px;
+    border-radius: calc(var(--fb-radius) / 3);
     object-fit: cover;
     width: 100%;
   }
@@ -756,7 +850,7 @@ const styles = `
 
   figure img {
     aspect-ratio: 1;
-    border-radius: 6px;
+    border-radius: calc(var(--fb-radius) / 3);
     object-fit: cover;
     width: 100%;
   }
@@ -771,7 +865,7 @@ const styles = `
     appearance: none;
     background: transparent;
     border: 0;
-    color: #b42318;
+    color: var(--fb-danger);
     cursor: pointer;
     font: inherit;
     font-size: 11px;
@@ -786,12 +880,12 @@ const styles = `
   }
 
   .status.success {
-    color: #1d7f40;
+    color: var(--fb-success);
   }
 
   .status.error,
   .error-text {
-    color: #b42318;
+    color: var(--fb-danger);
   }
 
   .submit-button:disabled {

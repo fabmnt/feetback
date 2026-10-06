@@ -1,37 +1,43 @@
+import Script from "next/script";
+
+import { FeetbackEmbed } from "@/app/feetback-embed";
+
 export const metadata = {
   title: "Demo Customer App | Feetback",
 };
 
 export default function DemoCustomerAppPage() {
-  const developmentContext = serializeInlineValue(getDevelopmentContext());
-
   return (
     <main className="min-h-screen bg-[#f4f2ec] text-[#18201f]">
-      <script
-        id="feetback-settings"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: Demo Customer App needs a literal preload settings snippet.
-        dangerouslySetInnerHTML={{
-          __html: `
-          window.FeetbackSettings = {
-            clientKey: "demo_customer_app",
-            apiUrl: "/api/feedback",
-            developmentContext: ${developmentContext},
-            reporterIdentity: {
-              id: "reporter_123",
-              email: "reporter@example.com",
-              name: "Demo Reporter"
-            },
-            feedbackButton: {
-              enabled: true,
-              position: "bottom-right"
-            }
-          };
-        `,
+      <FeetbackEmbed
+        settings={{
+          clientKey: "demo_customer_app",
+          apiUrl: "/api/feedback",
+          developmentContext: getDevelopmentContext(),
+          reporterIdentity: {
+            id: "reporter_123",
+            email: "reporter@example.com",
+            name: "Demo Reporter",
+          },
+          // Styled to match the Acme Console look of this Customer App.
+          theme: {
+            accent: "#123b36",
+            accentHover: "#0d2f2b",
+            highlight: "#1f8d80",
+            text: "#18201f",
+            textSoft: "#65706d",
+            surface: "#fffdf8",
+            surfaceRaised: "#ffffff",
+            border: "#d9d3c5",
+            radius: "8px",
+            buttonRadius: "6px",
+          },
+          feedbackButton: { enabled: true, position: "bottom-right" },
         }}
       />
-      <script src="/feetback.js" />
-      <script
+      <Script
         id="feetback-demo-controls"
+        strategy="afterInteractive"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: Demo Customer App wires a simple native control to the embedded API.
         dangerouslySetInnerHTML={{
           __html: `
@@ -194,8 +200,4 @@ function getDevelopmentContext() {
   const commit = process.env.FEEDBACK_DEV_COMMIT?.trim();
 
   return branch && commit ? { branch, commit } : undefined;
-}
-
-function serializeInlineValue(value: unknown) {
-  return JSON.stringify(value)?.replaceAll("<", "\\u003c") ?? "undefined";
 }
