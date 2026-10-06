@@ -73,7 +73,7 @@ const es: LandingCopy = {
   requestAccessSubject: "Solicitud de acceso a Feetback",
   tryTheDemo: "Probar la demo",
   requestAccess: "Solicitar acceso",
-  heroTitle: "El feedback llega caminando.",
+  heroTitle: "Feedback llega de inmediato.",
   heroText:
     "Agrega una etiqueta script a tu app web. Tus usuarios obtienen un botón amigable y tú recibes cada nota ordenada y lista para resolver.",
   startCollecting: "Empieza a recibir feedback",

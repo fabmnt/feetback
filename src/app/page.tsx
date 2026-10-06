@@ -19,8 +19,12 @@ const bricolage = Bricolage_Grotesque({
 
 const CONTACT_EMAIL = "fabianmontoya2802@gmail.com";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getRequestLocale();
+type HomeProps = { searchParams: Promise<{ lang?: string | string[] }> };
+
+export async function generateMetadata({
+  searchParams,
+}: HomeProps): Promise<Metadata> {
+  const locale = await getRequestLocale((await searchParams).lang);
 
   return { description: LANDING_COPY[locale].metadataDescription };
 }
@@ -34,8 +38,8 @@ const secondaryLinkClass =
  * The language comes from the browser's Accept-Language header, so this page
  * renders per request instead of being prerendered.
  */
-export default async function Home() {
-  const locale = await getRequestLocale();
+export default async function Home({ searchParams }: HomeProps) {
+  const locale = await getRequestLocale((await searchParams).lang);
   const copy = LANDING_COPY[locale];
   const requestAccessHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(copy.requestAccessSubject)}`;
 
