@@ -2,11 +2,8 @@ import type { CSSProperties } from "react";
 
 import { FootprintIcon } from "./footprint-icon";
 import styles from "./landing.module.css";
-import {
-  INBOX_NOTES,
-  type LandingNote,
-  POPOVER_NOTES,
-} from "./landing-content";
+import { buildLandingNotes, type LandingNote } from "./landing-content";
+import type { LandingCopy } from "./landing-copy";
 import { NoteSticker } from "./note-sticker";
 
 const FOOTSTEP_COUNT = 4;
@@ -20,20 +17,28 @@ function staggerStyle(index: number) {
  * Decorative live scene: a Customer App sends notes that walk into the
  * dashboard inbox. Pure CSS animation, no client JavaScript.
  */
-export function HeroScene() {
+export function HeroScene({ copy }: { copy: LandingCopy }) {
+  const { popoverNotes, inboxNotes } = buildLandingNotes(copy.noteTexts);
+
   return (
     <div
       aria-hidden="true"
       className="relative grid gap-6 rounded-[2rem] bg-(--lp-grape) p-4 sm:p-8 lg:grid-cols-[1.25fr_10rem_1fr] lg:items-center lg:gap-4"
     >
-      <CustomerAppWindow />
+      <CustomerAppWindow copy={copy} notes={popoverNotes} />
       <FootstepTrail />
-      <Inbox />
+      <Inbox copy={copy} notes={inboxNotes} />
     </div>
   );
 }
 
-function CustomerAppWindow() {
+function CustomerAppWindow({
+  copy,
+  notes,
+}: {
+  copy: LandingCopy;
+  notes: LandingNote[];
+}) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_-20px_rgb(31_17_71/0.55)]">
       <div className="flex items-center gap-1.5 border-(--lp-ink)/10 border-b px-4 py-3">
@@ -57,7 +62,7 @@ function CustomerAppWindow() {
         <div className="h-9 w-32 rounded-lg bg-(--lp-ink)/80" />
       </div>
 
-      <FeedbackPopover />
+      <FeedbackPopover copy={copy} notes={notes} />
 
       <span
         className={`${styles.feedbackButton} absolute right-4 bottom-4 grid size-12 place-items-center rounded-full bg-(--lp-sun) text-(--lp-ink) shadow-lg`}
@@ -68,12 +73,18 @@ function CustomerAppWindow() {
   );
 }
 
-function FeedbackPopover() {
+function FeedbackPopover({
+  copy,
+  notes,
+}: {
+  copy: LandingCopy;
+  notes: LandingNote[];
+}) {
   return (
     <div className="absolute right-4 bottom-20 w-[min(17rem,calc(100%-2rem))] rounded-2xl border border-(--lp-ink)/10 bg-white p-3 shadow-[0_18px_40px_-16px_rgb(31_17_71/0.45)]">
-      <p className="font-bold text-sm">What's going on?</p>
+      <p className="font-bold text-sm">{copy.popoverTitle}</p>
       <div className="relative mt-2 h-16 rounded-xl bg-(--lp-paper)">
-        {POPOVER_NOTES.map((note, index) => (
+        {notes.map((note, index) => (
           <div
             key={note.text}
             className={`${styles.popoverNote} flex flex-col justify-between p-2.5`}
@@ -87,6 +98,7 @@ function FeedbackPopover() {
             </span>
             <NoteSticker
               type={note.type}
+              label={copy.noteTypeLabels[note.type]}
               className={`${styles.typedSticker} self-start`}
             />
           </div>
@@ -96,7 +108,7 @@ function FeedbackPopover() {
         <span
           className={`${styles.sendButton} rounded-lg bg-(--lp-grape) px-3 py-1 font-bold text-white text-xs`}
         >
-          Send
+          {copy.send}
         </span>
       </div>
     </div>
@@ -118,23 +130,27 @@ function FootstepTrail() {
   );
 }
 
-function Inbox() {
+function Inbox({ copy, notes }: { copy: LandingCopy; notes: LandingNote[] }) {
   return (
     <div className="rounded-2xl bg-(--lp-ink) p-4 text-white">
       <div className="flex items-center justify-between gap-3">
-        <p className="font-bold">Your inbox</p>
+        <p className="font-bold">{copy.inboxTitle}</p>
         <p className="flex items-center gap-2 text-sm text-white/75">
           <span
             className={`${styles.liveDot} size-2 rounded-full bg-(--lp-mint)`}
           />
-          <span className={styles.counter} /> notes
+          <span className={styles.counter} /> {copy.inboxCounterSuffix}
         </p>
       </div>
       <div className="relative mt-4 h-72 overflow-hidden [mask-image:linear-gradient(transparent,black_15%,black_85%,transparent)]">
         <ul className={`${styles.feedTrack} grid`}>
-          {[...INBOX_NOTES, ...INBOX_NOTES].map((note, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: The list repeats on purpose for a seamless loop.
-            <InboxRow key={index} note={note} />
+          {[...notes, ...notes].map((note, index) => (
+            <InboxRow
+              // biome-ignore lint/suspicious/noArrayIndexKey: The list repeats on purpose for a seamless loop.
+              key={index}
+              note={note}
+              typeLabel={copy.noteTypeLabels[note.type]}
+            />
           ))}
         </ul>
       </div>
@@ -142,11 +158,17 @@ function Inbox() {
   );
 }
 
-function InboxRow({ note }: { note: LandingNote }) {
+function InboxRow({
+  note,
+  typeLabel,
+}: {
+  note: LandingNote;
+  typeLabel: string;
+}) {
   return (
     <li className="mb-2 rounded-xl bg-white/8 p-3">
       <div className="flex items-center justify-between gap-2">
-        <NoteSticker type={note.type} />
+        <NoteSticker type={note.type} label={typeLabel} />
         <span className="truncate text-white/60 text-xs">{note.app}</span>
       </div>
       <p className="mt-2 text-sm leading-snug">{note.text}</p>

@@ -9,6 +9,7 @@ import {
   readElementContext,
   readUploadedImages,
 } from "./browser-io";
+import { WIDGET_MESSAGES } from "./messages";
 
 vi.mock("html2canvas", () => ({
   default: vi.fn(),
@@ -124,7 +125,7 @@ describe("Feetback browser IO", () => {
       new File(["plain"], "notes.txt", { type: "text/plain" }),
     ]);
 
-    const result = await readUploadedImages(files);
+    const result = await readUploadedImages(files, WIDGET_MESSAGES.en.upload);
 
     expect(result.error).toBe(
       "Only PNG, JPEG, GIF, or WebP images can be uploaded.",
@@ -145,7 +146,7 @@ describe("Feetback browser IO", () => {
       }),
     ]);
 
-    const result = await readUploadedImages(files);
+    const result = await readUploadedImages(files, WIDGET_MESSAGES.en.upload);
 
     expect(result.images).toEqual([]);
     expect(result.error).toBe("Images must be 5 MB or smaller.");

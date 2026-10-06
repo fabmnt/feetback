@@ -1,3 +1,4 @@
+import { resolveLocale } from "../i18n/locale";
 import {
   type DevelopmentContext,
   type ElementContext,
@@ -16,6 +17,7 @@ import {
   readElementContext,
   readUploadedImages,
 } from "./browser-io";
+import { WIDGET_MESSAGES } from "./messages";
 
 type FeedbackButtonPosition = "bottom-right" | "bottom-left";
 
@@ -59,6 +61,11 @@ type FeetbackSettings = {
   reporterIdentity?: ReporterIdentity;
   developmentContext?: DevelopmentContext;
   theme?: FeetbackTheme;
+  /**
+   * Language of the Script UI, such as "en" or "es". Defaults to the
+   * Reporter's browser language. Unsupported languages fall back to English.
+   */
+  language?: string;
   feedbackButton?: {
     enabled?: boolean;
     position?: FeedbackButtonPosition;
@@ -68,7 +75,7 @@ type FeetbackSettings = {
 
 type NormalizedFeetbackSettings = Omit<
   Required<FeetbackSettings>,
-  "developmentContext"
+  "developmentContext" | "language"
 > & {
   developmentContext?: DevelopmentContext;
 };
@@ -88,7 +95,7 @@ type ScreenshotState =
 
 type SubmissionState =
   | { status: "idle"; message: "" }
-  | { status: "submitting"; message: "Sending feedback..." }
+  | { status: "submitting"; message: string }
   | { status: "success"; message: string }
   | { status: "error"; message: string };
 
@@ -105,22 +112,22 @@ declare global {
   }
 }
 
-const typeLabels: Record<FeedbackType, string> = {
-  bug_report: "Bug report",
-  complaint: "Complaint",
-  security_concern: "Security concern",
-  improvement_suggestion: "Improvement suggestion",
-  performance_issue: "Performance issue",
-  question: "Question",
-  other: "Other",
-};
-
 export function initFeetbackScript(win: Window = window) {
   if (win.__feetbackRuntime) {
     return win.__feetbackRuntime.api;
   }
 
-  const settings = normalizeSettings(win.FeetbackSettings);
+  const messages =
+    WIDGET_MESSAGES[
+      resolveLocale([
+        win.FeetbackSettings?.language ?? "",
+        ...win.navigator.languages,
+      ])
+    ];
+  const settings = normalizeSettings(
+    win.FeetbackSettings,
+    messages.defaultButtonLabel,
+  );
   const doc = win.document;
   const host = doc.createElement("div");
   host.id = HOST_ID;
@@ -170,36 +177,36 @@ export function initFeetbackScript(win: Window = window) {
       <div class="feetback-root ${positionClass}">
         ${
           settings.feedbackButton.enabled
-            ? `<button class="feedback-button" type="button" aria-label="Open Feetback">${escapeHtml(
+            ? `<button class="feedback-button" type="button" aria-label="${escapeHtml(messages.openButtonLabel)}">${escapeHtml(
                 settings.feedbackButton.label,
               )}</button>`
             : ""
         }
         ${
           state.isOpen
-            ? `<section class="feedback-popover" aria-label="Feetback Feedback Popover">
+            ? `<section class="feedback-popover" aria-label="${escapeHtml(messages.popoverLabel)}">
                 <header class="popover-header">
                   <div>
                     <p class="eyebrow">Feetback</p>
-                    <h2>Send feedback</h2>
+                    <h2>${messages.title}</h2>
                   </div>
-                  <button class="icon-button" data-action="close" type="button" aria-label="Close">&times;</button>
+                  <button class="icon-button" data-action="close" type="button" aria-label="${messages.close}">&times;</button>
                 </header>
 
                 <label class="field">
-                  <span>Feedback Content</span>
-                  <textarea data-field="content" rows="4" placeholder="What should the team know?">${escapeHtml(
+                  <span>${messages.contentField}</span>
+                  <textarea data-field="content" rows="4" placeholder="${escapeHtml(messages.contentPlaceholder)}">${escapeHtml(
                     state.content,
                   )}</textarea>
                 </label>
 
                 <label class="field">
-                  <span>Feedback Type</span>
+                  <span>${messages.typeField}</span>
                   <select data-field="type">
-                    <option value="" ${state.type === "" ? "selected" : ""}>Uncategorized</option>
+                    <option value="" ${state.type === "" ? "selected" : ""}>${messages.uncategorized}</option>
                     ${FEEDBACK_TYPES.map(
                       (type) =>
-                        `<option value="${type}" ${state.type === type ? "selected" : ""}>${typeLabels[type]}</option>`,
+                        `<option value="${type}" ${state.type === type ? "selected" : ""}>${messages.feedbackTypes[type]}</option>`,
                     ).join("")}
                   </select>
                 </label>
@@ -207,35 +214,35 @@ export function initFeetbackScript(win: Window = window) {
                 <div class="context-grid">
                   <div class="context-panel">
                     <div class="panel-copy">
-                      <strong>Screenshot</strong>
-                      <span>${screenshotLabel(state.screenshot)}</span>
+                      <strong>${messages.screenshot}</strong>
+                      <span>${messages.screenshotStatus[state.screenshot.status]}</span>
                     </div>
-                    ${renderScreenshotPreview(state.screenshot)}
-                    ${state.screenshot.status === "captured" ? `<button class="ghost-button" data-action="remove-screenshot" type="button">Remove</button>` : ""}
+                    ${renderScreenshotPreview(state.screenshot, messages.screenshotPreviewAlt)}
+                    ${state.screenshot.status === "captured" ? `<button class="ghost-button" data-action="remove-screenshot" type="button">${messages.remove}</button>` : ""}
                   </div>
 
                   <div class="context-panel">
                     <div class="panel-copy">
-                      <strong>Selected Element</strong>
-                      <span>${state.selectedElement ? escapeHtml(formatElementSummary(state.selectedElement)) : "None selected"}</span>
+                      <strong>${messages.selectedElement}</strong>
+                      <span>${state.selectedElement ? escapeHtml(formatElementSummary(state.selectedElement)) : messages.noneSelected}</span>
                     </div>
                     <div class="button-row">
-                      <button class="ghost-button" data-action="select-element" type="button">Select</button>
-                      ${state.selectedElement ? `<button class="ghost-button" data-action="remove-element" type="button">Remove</button>` : ""}
+                      <button class="ghost-button" data-action="select-element" type="button">${messages.select}</button>
+                      ${state.selectedElement ? `<button class="ghost-button" data-action="remove-element" type="button">${messages.remove}</button>` : ""}
                     </div>
                   </div>
                 </div>
 
                 <label class="field upload-field">
-                  <span>Uploaded Images</span>
+                  <span>${messages.uploadedImages}</span>
                   <input data-field="images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple />
                   ${state.uploadError ? `<small class="error-text">${escapeHtml(state.uploadError)}</small>` : ""}
                 </label>
-                ${renderUploadedImages(state.uploadedImages)}
+                ${renderUploadedImages(state.uploadedImages, messages.remove)}
 
                 <footer class="popover-footer">
                   <p class="status ${state.submission.status}">${escapeHtml(state.submission.message)}</p>
-                  <button class="submit-button" data-action="submit" type="button" ${canSubmit ? "" : "disabled"}>Send</button>
+                  <button class="submit-button" data-action="submit" type="button" ${canSubmit ? "" : "disabled"}>${messages.send}</button>
                 </footer>
               </section>`
             : ""
@@ -407,7 +414,7 @@ export function initFeetbackScript(win: Window = window) {
       return;
     }
 
-    const { images, error } = await readUploadedImages(files);
+    const { images, error } = await readUploadedImages(files, messages.upload);
     state.uploadError = error;
 
     if (images.length > 0) {
@@ -428,7 +435,7 @@ export function initFeetbackScript(win: Window = window) {
     if (!state.content.trim()) {
       state.submission = {
         status: "error",
-        message: "Feedback Content is required.",
+        message: messages.contentRequired,
       };
       render();
       return;
@@ -437,13 +444,13 @@ export function initFeetbackScript(win: Window = window) {
     if (!settings.clientKey) {
       state.submission = {
         status: "error",
-        message: "Feetback client key is missing.",
+        message: messages.clientKeyMissing,
       };
       render();
       return;
     }
 
-    state.submission = { status: "submitting", message: "Sending feedback..." };
+    state.submission = { status: "submitting", message: messages.sending };
     render();
 
     const submission: FeedbackSubmission = {
@@ -479,7 +486,7 @@ export function initFeetbackScript(win: Window = window) {
       state.screenshot = { status: "idle", attachment: null };
       state.submission = {
         status: "success",
-        message: "Feedback sent. Thank you.",
+        message: messages.sent,
       };
       render();
     } catch (error) {
@@ -491,9 +498,7 @@ export function initFeetbackScript(win: Window = window) {
 
       state.submission = {
         status: "error",
-        message: isAbortError
-          ? "Feedback submission timed out. Please try again."
-          : "Could not send feedback. Please try again.",
+        message: isAbortError ? messages.timedOut : messages.sendFailed,
       };
       render();
     }
@@ -527,6 +532,7 @@ function applyTheme(host: HTMLElement, theme: FeetbackTheme | undefined) {
 
 function normalizeSettings(
   settings: FeetbackSettings | undefined,
+  defaultButtonLabel: string,
 ): NormalizedFeetbackSettings {
   return {
     clientKey: settings?.clientKey?.trim() || "",
@@ -540,35 +546,23 @@ function normalizeSettings(
         settings?.feedbackButton?.position === "bottom-left"
           ? "bottom-left"
           : "bottom-right",
-      label: settings?.feedbackButton?.label || "Feedback",
+      label: settings?.feedbackButton?.label || defaultButtonLabel,
     },
   };
 }
 
-function screenshotLabel(screenshot: ScreenshotState) {
-  switch (screenshot.status) {
-    case "capturing":
-      return "Capturing automatically";
-    case "captured":
-      return "Attached";
-    case "removed":
-      return "Removed";
-    case "failed":
-      return "Unavailable, submission still works";
-    case "idle":
-      return "Will attach automatically";
-  }
-}
-
-function renderScreenshotPreview(screenshot: ScreenshotState) {
+function renderScreenshotPreview(screenshot: ScreenshotState, alt: string) {
   if (screenshot.status !== "captured") {
     return "";
   }
 
-  return `<img class="screenshot-preview" src="${screenshot.attachment.dataUrl}" alt="Screenshot preview" />`;
+  return `<img class="screenshot-preview" src="${screenshot.attachment.dataUrl}" alt="${escapeHtml(alt)}" />`;
 }
 
-function renderUploadedImages(uploadedImages: UploadedImage[]) {
+function renderUploadedImages(
+  uploadedImages: UploadedImage[],
+  removeLabel: string,
+) {
   if (uploadedImages.length === 0) {
     return "";
   }
@@ -579,9 +573,9 @@ function renderUploadedImages(uploadedImages: UploadedImage[]) {
         (image, index) => `<figure>
           <img src="${image.dataUrl}" alt="${escapeHtml(image.name)}" />
           <figcaption title="${escapeHtml(image.name)}">${escapeHtml(image.name)}</figcaption>
-          <button class="image-remove" data-remove-image-index="${index}" type="button" aria-label="Remove ${escapeHtml(
+          <button class="image-remove" data-remove-image-index="${index}" type="button" aria-label="${escapeHtml(removeLabel)} ${escapeHtml(
             image.name,
-          )}">Remove</button>
+          )}">${removeLabel}</button>
         </figure>`,
       )
       .join("")}

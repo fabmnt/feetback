@@ -4,22 +4,22 @@ import { type LandingNoteType, NOTE_TYPE_STYLES } from "./landing-content";
 
 export function NoteSticker({
   type,
+  label,
   className,
 }: {
   type: LandingNoteType;
+  label: string;
   className?: string;
 }) {
-  const style = NOTE_TYPE_STYLES[type];
-
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 font-bold text-xs",
-        style.className,
+        NOTE_TYPE_STYLES[type],
         className,
       )}
     >
-      {style.label}
+      {label}
     </span>
   );
 }

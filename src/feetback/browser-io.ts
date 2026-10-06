@@ -13,7 +13,6 @@ export const PRIVACY_MASK_SELECTOR =
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_DATA_URL_BYTES = 5 * 1024 * 1024;
-const MAX_IMAGE_BYTES_ERROR = "Images must be 5 MB or smaller.";
 const SUBMIT_TIMEOUT_MS = 10_000;
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/png",
@@ -88,7 +87,16 @@ export function readElementContext(element: Element): ElementContext {
   };
 }
 
-export async function readUploadedImages(files: FileList | null) {
+type UploadMessages = {
+  unsupportedType: string;
+  tooLarge: string;
+  unreadable: string;
+};
+
+export async function readUploadedImages(
+  files: FileList | null,
+  messages: UploadMessages,
+) {
   if (!files || files.length === 0) {
     return { images: [] as UploadedImage[], error: "" };
   }
@@ -96,12 +104,12 @@ export async function readUploadedImages(files: FileList | null) {
   let error = "";
   const acceptedFiles = Array.from(files).filter((file) => {
     if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      error = "Only PNG, JPEG, GIF, or WebP images can be uploaded.";
+      error = messages.unsupportedType;
       return false;
     }
 
     if (file.size > MAX_IMAGE_BYTES) {
-      error = MAX_IMAGE_BYTES_ERROR;
+      error = messages.tooLarge;
       return false;
     }
 
@@ -110,7 +118,9 @@ export async function readUploadedImages(files: FileList | null) {
 
   try {
     return {
-      images: await Promise.all(acceptedFiles.map(readUploadedImage)),
+      images: await Promise.all(
+        acceptedFiles.map((file) => readUploadedImage(file, messages)),
+      ),
       error,
     };
   } catch (caughtError) {
@@ -119,7 +129,7 @@ export async function readUploadedImages(files: FileList | null) {
       error:
         caughtError instanceof Error
           ? caughtError.message
-          : "One or more images could not be read.",
+          : messages.unreadable,
     };
   }
 }
@@ -205,16 +215,16 @@ function buildSelectorPath(element: Element) {
   return parts.join(" > ");
 }
 
-function readUploadedImage(file: File) {
+function readUploadedImage(file: File, messages: UploadMessages) {
   return new Promise<UploadedImage>((resolve, reject) => {
     const reader = new FileReader();
     reader.addEventListener("error", () =>
-      reject(new Error("Unable to read image.")),
+      reject(new Error(messages.unreadable)),
     );
     reader.addEventListener("load", () => {
       const dataUrl = String(reader.result);
       if (!isWithinDataUrlByteLimit(dataUrl)) {
-        reject(new Error(MAX_IMAGE_BYTES_ERROR));
+        reject(new Error(messages.tooLarge));
         return;
       }
 
