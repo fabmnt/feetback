@@ -28,11 +28,11 @@ _Avoid_: Site key, public key, app key
 A Customer-approved web origin from which a Client Key is allowed to send Feedback Submissions.
 _Avoid_: Domain whitelist, URL allowlist
 
-**Feetback Settings**:
+**Client Settings**:
 The browser configuration object provided by a Customer App before the Feetback script loads.
 _Avoid_: Config, options
 
-**Feetback API**:
+**Client API**:
 The runtime browser API exposed as `window.feetback` for Customer Apps to control or identify the Script UI.
 _Avoid_: Widget API, SDK
 
@@ -67,10 +67,6 @@ _Avoid_: Issue Signal, importance score, severity
 **Issue Status**:
 The Customer-visible lifecycle state of a Feedback Issue, such as open, planned, in progress, resolved, or closed.
 _Avoid_: State, lane, stage
-
-**Implementation Prompt**:
-A text-only developer-facing prompt generated for a Feedback Issue that helps a coding agent understand the problem, evidence, expected behavior, and relevant context from related Feedback Items; it excludes Reporter Identity and visual media payloads.
-_Avoid_: Agent prompt, AI prompt, fix prompt
 
 **Feedback Submission**:
 The act of sending a Feedback Item from the Script UI to Feetback.
