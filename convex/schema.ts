@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { EMBEDDING_DIMENSIONS } from "./lib/triageConfig";
 
 const feedbackType = v.union(
   v.literal("bug_report"),
@@ -67,6 +68,20 @@ const elementContext = v.object({
   highlightContext: v.optional(v.string()),
 });
 
+// AI grouping and classification state of a Feedback Item. Confidences are
+// the decision model's calibrated 0..1 scores for the applied answers.
+export const triageState = v.object({
+  status: v.union(
+    v.literal("pending"),
+    v.literal("done"),
+    v.literal("failed"),
+    v.literal("skipped"),
+  ),
+  typeConfidence: v.optional(v.number()),
+  groupingConfidence: v.optional(v.number()),
+  error: v.optional(v.string()),
+});
+
 const mediaMetadata = v.object({
   kind: v.union(v.literal("screenshot"), v.literal("uploaded_image")),
   storageId: v.optional(v.id("_storage")),
@@ -113,6 +128,11 @@ export default defineSchema({
     signalScore: v.number(),
     signalReasons: v.array(v.string()),
     itemCount: v.number(),
+    // Set when AI triage was unsure about the type or the grouping; cleared
+    // when a User edits the issue.
+    needsReview: v.optional(v.boolean()),
+    // Set once a User edits the issue; AI triage never overrides those edits.
+    editedByUser: v.optional(v.boolean()),
     firstSubmittedAt: v.string(),
     lastSubmittedAt: v.string(),
   })
@@ -151,6 +171,9 @@ export default defineSchema({
     clientKey: v.string(),
     content: v.string(),
     type: feedbackType,
+    // The type chosen by the Reporter; `type` holds the applied one.
+    reporterType: v.optional(feedbackType),
+    triage: v.optional(triageState),
     reporterIdentity: v.optional(reporterIdentity),
     developmentContext: v.optional(developmentContext),
     pageContext: v.optional(pageContext),
@@ -162,4 +185,17 @@ export default defineSchema({
     .index("by_issueId", ["issueId"])
     .index("by_customerAppId", ["customerAppId"])
     .index("by_customerId_and_submittedAt", ["customerId", "submittedAt"]),
+
+  // Kept apart from feedbackItems so issue and item reads don't load vectors.
+  feedbackItemEmbeddings: defineTable({
+    customerId: v.id("customers"),
+    itemId: v.id("feedbackItems"),
+    embedding: v.array(v.float64()),
+  })
+    .index("by_itemId", ["itemId"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: EMBEDDING_DIMENSIONS,
+      filterFields: ["customerId"],
+    }),
 });

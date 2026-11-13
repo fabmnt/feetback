@@ -1,0 +1,624 @@
+{
+  "version": 1,
+  "customerApp": "Fictional invoicing SaaS used by small businesses",
+  "feedbackTypes": [
+    "bug_report",
+    "complaint",
+    "security_concern",
+    "improvement_suggestion",
+    "performance_issue",
+    "question",
+    "other"
+  ],
+  "groups": {
+    "G01": "Login button does nothing on Safari",
+    "G02": "Session stays active after logout",
+    "G03": "Dashboard takes too long to load",
+    "G04": "Request: export invoices to CSV/Excel",
+    "G05": "Request: dark mode",
+    "G06": "Invoice PDF total is wrong (tax rounding)",
+    "G07": "Complaint about the new price increase",
+    "G08": "How to invite a team member",
+    "G09": "Password reset email never arrives",
+    "G10": "Another company's invoices are visible",
+    "G11": "Search freezes while typing",
+    "G12": "Support takes days to answer",
+    "S01": "Singleton: praise",
+    "S02": "Singleton: logo upload rejects PNG",
+    "S03": "Singleton: question about API access",
+    "S04": "Singleton: typo on pricing page",
+    "S05": "Singleton: request for recurring invoices",
+    "S06": "Singleton: noise / test message"
+  },
+  "items": [
+    {
+      "id": 1,
+      "lang": "en",
+      "content": "I click the Log in button and nothing happens. Using Safari on my Mac.",
+      "pageUrl": "/login",
+      "reporterType": "bug_report",
+      "expectedType": "bug_report",
+      "expectedGroup": "G01"
+    },
+    {
+      "id": 2,
+      "lang": "es",
+      "content": "El botón de iniciar sesión no responde en Safari, en Chrome sí funciona.",
+      "pageUrl": "/login",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "G01"
+    },
+    {
+      "id": 3,
+      "lang": "en",
+      "content": "can't sign in on my iPhone, the button is dead",
+      "pageUrl": "/login",
+      "reporterType": "complaint",
+      "expectedType": "bug_report",
+      "expectedGroup": "G01",
+      "note": "Reporter picked the wrong type. iPhone Safari is the same root cause."
+    },
+    {
+      "id": 4,
+      "lang": "en",
+      "content": "Login page broken?? Pressing 'Log in' doesn't submit anything in Safari 19",
+      "pageUrl": "/login",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "G01"
+    },
+    {
+      "id": 5,
+      "lang": "es",
+      "content": "No puedo entrar desde el iPad, toco el botón y no pasa nada.",
+      "pageUrl": "/login",
+      "reporterType": "question",
+      "expectedType": "bug_report",
+      "expectedGroup": "G01",
+      "note": "Wrong Reporter type."
+    },
+
+    {
+      "id": 6,
+      "lang": "en",
+      "content": "I logged out, pressed the back button and I was inside my account again with all invoices visible.",
+      "pageUrl": "/dashboard",
+      "reporterType": "bug_report",
+      "expectedType": "security_concern",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G02",
+      "note": "Similar words to G01 (log in/out) but a different problem."
+    },
+    {
+      "id": 7,
+      "lang": "es",
+      "content": "Cerré sesión en una computadora compartida y otra persona pudo ver mis facturas después.",
+      "pageUrl": "/logout",
+      "reporterType": null,
+      "expectedType": "security_concern",
+      "expectedGroup": "G02"
+    },
+    {
+      "id": 8,
+      "lang": "en",
+      "content": "Logout doesn't really log you out. Refreshing the page brings the session back.",
+      "pageUrl": "/dashboard",
+      "reporterType": "security_concern",
+      "expectedType": "security_concern",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G02"
+    },
+    {
+      "id": 9,
+      "lang": "en",
+      "content": "Signing out is broken, I'm still logged in afterwards",
+      "pageUrl": "/settings",
+      "reporterType": null,
+      "expectedType": "security_concern",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G02",
+      "note": "Hard: very close wording to G01."
+    },
+
+    {
+      "id": 10,
+      "lang": "en",
+      "content": "Dashboard takes like 15 seconds to load every morning.",
+      "pageUrl": "/dashboard",
+      "reporterType": "performance_issue",
+      "expectedType": "performance_issue",
+      "expectedGroup": "G03"
+    },
+    {
+      "id": 11,
+      "lang": "es",
+      "content": "La página principal tarda muchísimo en cargar, se queda en blanco un buen rato.",
+      "pageUrl": "/dashboard",
+      "reporterType": "bug_report",
+      "expectedType": "performance_issue",
+      "expectedGroup": "G03",
+      "note": "Wrong Reporter type."
+    },
+    {
+      "id": 12,
+      "lang": "en",
+      "content": "Why is the home screen so slow? I have around 2000 invoices.",
+      "pageUrl": "/dashboard",
+      "reporterType": "question",
+      "expectedType": "performance_issue",
+      "acceptableTypes": ["question"],
+      "expectedGroup": "G03"
+    },
+    {
+      "id": 13,
+      "lang": "en",
+      "content": "the overview page is painfully slow, please fix",
+      "pageUrl": "/dashboard",
+      "reporterType": "complaint",
+      "expectedType": "performance_issue",
+      "acceptableTypes": ["complaint"],
+      "expectedGroup": "G03"
+    },
+
+    {
+      "id": 14,
+      "lang": "en",
+      "content": "Please add a way to export all invoices to CSV for my accountant.",
+      "pageUrl": "/invoices",
+      "reporterType": "improvement_suggestion",
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G04"
+    },
+    {
+      "id": 15,
+      "lang": "es",
+      "content": "Sería genial poder descargar las facturas en Excel.",
+      "pageUrl": "/invoices",
+      "reporterType": null,
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G04"
+    },
+    {
+      "id": 16,
+      "lang": "en",
+      "content": "Is there any way to export my data to a spreadsheet?",
+      "pageUrl": "/invoices",
+      "reporterType": "question",
+      "expectedType": "question",
+      "acceptableTypes": ["improvement_suggestion"],
+      "expectedGroup": "G04",
+      "note": "Asked as a question but the underlying need is the export feature."
+    },
+    {
+      "id": 17,
+      "lang": "en",
+      "content": "I need an Excel export. Copying every invoice by hand takes me hours each month.",
+      "pageUrl": "/reports",
+      "reporterType": "complaint",
+      "expectedType": "improvement_suggestion",
+      "acceptableTypes": ["complaint"],
+      "expectedGroup": "G04"
+    },
+
+    {
+      "id": 18,
+      "lang": "en",
+      "content": "Dark mode please! My eyes hurt at night.",
+      "pageUrl": "/settings",
+      "reporterType": "improvement_suggestion",
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G05"
+    },
+    {
+      "id": 19,
+      "lang": "es",
+      "content": "¿Van a agregar modo oscuro?",
+      "pageUrl": "/settings",
+      "reporterType": "question",
+      "expectedType": "improvement_suggestion",
+      "acceptableTypes": ["question"],
+      "expectedGroup": "G05"
+    },
+    {
+      "id": 20,
+      "lang": "en",
+      "content": "would love a dark theme",
+      "pageUrl": "/dashboard",
+      "reporterType": null,
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G05"
+    },
+
+    {
+      "id": 21,
+      "lang": "en",
+      "content": "The total on the PDF is 0.01 off from what the screen shows. Looks like a tax rounding problem.",
+      "pageUrl": "/invoices/482",
+      "reporterType": "bug_report",
+      "expectedType": "bug_report",
+      "expectedGroup": "G06"
+    },
+    {
+      "id": 22,
+      "lang": "es",
+      "content": "El total del PDF no coincide con el de la factura en pantalla, hay un centavo de diferencia.",
+      "pageUrl": "/invoices/91",
+      "reporterType": "complaint",
+      "expectedType": "bug_report",
+      "expectedGroup": "G06",
+      "note": "Wrong Reporter type."
+    },
+    {
+      "id": 23,
+      "lang": "en",
+      "content": "My client says the amount on the PDF is wrong. The VAT is calculated differently.",
+      "pageUrl": "/invoices/1033",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "G06"
+    },
+    {
+      "id": 24,
+      "lang": "en",
+      "content": "Downloaded invoice shows 119.99 but it should be 120.00",
+      "pageUrl": "/invoices/77",
+      "reporterType": "other",
+      "expectedType": "bug_report",
+      "expectedGroup": "G06",
+      "note": "Wrong Reporter type."
+    },
+
+    {
+      "id": 25,
+      "lang": "en",
+      "content": "You raised the price by 40% without any warning. Not happy.",
+      "pageUrl": "/billing",
+      "reporterType": "complaint",
+      "expectedType": "complaint",
+      "expectedGroup": "G07"
+    },
+    {
+      "id": 26,
+      "lang": "es",
+      "content": "El nuevo precio es un abuso, voy a buscar otra herramienta.",
+      "pageUrl": "/billing",
+      "reporterType": null,
+      "expectedType": "complaint",
+      "expectedGroup": "G07"
+    },
+    {
+      "id": 27,
+      "lang": "en",
+      "content": "Why did my monthly bill go from $15 to $21?",
+      "pageUrl": "/billing",
+      "reporterType": "question",
+      "expectedType": "complaint",
+      "acceptableTypes": ["question"],
+      "expectedGroup": "G07",
+      "note": "Ambiguous: question or complaint."
+    },
+
+    {
+      "id": 28,
+      "lang": "en",
+      "content": "How do I add my bookkeeper to my account?",
+      "pageUrl": "/settings/team",
+      "reporterType": "question",
+      "expectedType": "question",
+      "expectedGroup": "G08"
+    },
+    {
+      "id": 29,
+      "lang": "es",
+      "content": "¿Cómo invito a un compañero de trabajo para que vea las facturas?",
+      "pageUrl": "/settings",
+      "reporterType": null,
+      "expectedType": "question",
+      "expectedGroup": "G08"
+    },
+    {
+      "id": 30,
+      "lang": "en",
+      "content": "can't find where to invite users",
+      "pageUrl": "/settings",
+      "reporterType": "bug_report",
+      "expectedType": "question",
+      "acceptableTypes": ["improvement_suggestion"],
+      "expectedGroup": "G08",
+      "note": "Wrong Reporter type."
+    },
+
+    {
+      "id": 31,
+      "lang": "en",
+      "content": "I requested a password reset 3 times and never got the email. Checked spam too.",
+      "pageUrl": "/forgot-password",
+      "reporterType": "bug_report",
+      "expectedType": "bug_report",
+      "expectedGroup": "G09"
+    },
+    {
+      "id": 32,
+      "lang": "es",
+      "content": "No me llega el correo para restablecer la contraseña.",
+      "pageUrl": "/forgot-password",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "G09"
+    },
+    {
+      "id": 33,
+      "lang": "en",
+      "content": "Forgot my password and the reset link email doesn't arrive, so I can't log in at all",
+      "pageUrl": "/login",
+      "reporterType": "complaint",
+      "expectedType": "bug_report",
+      "expectedGroup": "G09",
+      "note": "Hard: mentions login and is on /login, but the problem is the email, not G01."
+    },
+
+    {
+      "id": 34,
+      "lang": "en",
+      "content": "I can see invoices from a company that is not mine! Customer names and amounts included.",
+      "pageUrl": "/invoices",
+      "reporterType": "bug_report",
+      "expectedType": "security_concern",
+      "expectedGroup": "G10",
+      "note": "Wrong Reporter type. Should rank very high."
+    },
+    {
+      "id": 35,
+      "lang": "es",
+      "content": "En el listado aparecen facturas de otra empresa, esto es grave.",
+      "pageUrl": "/invoices",
+      "reporterType": null,
+      "expectedType": "security_concern",
+      "expectedGroup": "G10"
+    },
+    {
+      "id": 36,
+      "lang": "en",
+      "content": "After switching workspace, the invoice list still shows the other workspace's clients",
+      "pageUrl": "/invoices",
+      "reporterType": "bug_report",
+      "expectedType": "security_concern",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G10",
+      "note": "Hard: may be the same data leak, phrased as a UI bug."
+    },
+
+    {
+      "id": 37,
+      "lang": "en",
+      "content": "The search box freezes the whole page for a few seconds on every key I type.",
+      "pageUrl": "/invoices",
+      "reporterType": "performance_issue",
+      "expectedType": "performance_issue",
+      "expectedGroup": "G11"
+    },
+    {
+      "id": 38,
+      "lang": "es",
+      "content": "Cuando escribo en el buscador la página se congela.",
+      "pageUrl": "/invoices",
+      "reporterType": "bug_report",
+      "expectedType": "performance_issue",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G11"
+    },
+    {
+      "id": 39,
+      "lang": "en",
+      "content": "typing in search is laggy",
+      "pageUrl": "/clients",
+      "reporterType": null,
+      "expectedType": "performance_issue",
+      "expectedGroup": "G11",
+      "note": "Hard: slow, like G03, but a different screen and cause."
+    },
+
+    {
+      "id": 40,
+      "lang": "en",
+      "content": "I wrote to support 4 days ago and still no reply.",
+      "pageUrl": "/help",
+      "reporterType": "complaint",
+      "expectedType": "complaint",
+      "expectedGroup": "G12"
+    },
+    {
+      "id": 41,
+      "lang": "es",
+      "content": "El soporte nunca contesta, llevo una semana esperando.",
+      "pageUrl": "/help",
+      "reporterType": null,
+      "expectedType": "complaint",
+      "expectedGroup": "G12"
+    },
+    {
+      "id": 42,
+      "lang": "en",
+      "content": "Your support is way too slow",
+      "pageUrl": "/dashboard",
+      "reporterType": "performance_issue",
+      "expectedType": "complaint",
+      "expectedGroup": "G12",
+      "note": "Hard: the word 'slow' points to performance, but it's about support. Wrong Reporter type."
+    },
+
+    {
+      "id": 43,
+      "lang": "en",
+      "content": "Just wanted to say this app saved me so much time. Thanks!",
+      "pageUrl": "/dashboard",
+      "reporterType": "other",
+      "expectedType": "other",
+      "expectedGroup": "S01"
+    },
+    {
+      "id": 44,
+      "lang": "es",
+      "content": "Al subir el logo de mi empresa en PNG me dice que el formato no es válido.",
+      "pageUrl": "/settings/branding",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "S02"
+    },
+    {
+      "id": 45,
+      "lang": "en",
+      "content": "Do you have a public API so I can create invoices from my shop?",
+      "pageUrl": "/settings",
+      "reporterType": "question",
+      "expectedType": "question",
+      "expectedGroup": "S03"
+    },
+    {
+      "id": 46,
+      "lang": "en",
+      "content": "Small thing: the pricing page says 'monthy' instead of 'monthly'.",
+      "pageUrl": "/pricing",
+      "reporterType": "other",
+      "expectedType": "bug_report",
+      "acceptableTypes": ["other"],
+      "expectedGroup": "S04"
+    },
+    {
+      "id": 47,
+      "lang": "es",
+      "content": "Necesito facturas recurrentes para mis clientes de cada mes.",
+      "pageUrl": "/invoices/new",
+      "reporterType": null,
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "S05",
+      "note": "Hard: close to G04 (both about invoices and features) but a different request."
+    },
+
+    {
+      "id": 48,
+      "lang": "en",
+      "content": "Log in still does nothing on Safari. Been like this for a week.",
+      "pageUrl": "/login",
+      "reporterType": "complaint",
+      "expectedType": "bug_report",
+      "acceptableTypes": ["complaint"],
+      "expectedGroup": "G01"
+    },
+    {
+      "id": 49,
+      "lang": "en",
+      "content": "PDF invoices have rounding errors in the tax line",
+      "pageUrl": "/invoices/12",
+      "reporterType": null,
+      "expectedType": "bug_report",
+      "expectedGroup": "G06"
+    },
+    {
+      "id": 50,
+      "lang": "es",
+      "content": "Exportar a CSV por favor, mi contador lo necesita.",
+      "pageUrl": "/invoices",
+      "reporterType": "improvement_suggestion",
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G04"
+    },
+    {
+      "id": 51,
+      "lang": "en",
+      "content": "Dashboard is slow again today",
+      "pageUrl": "/dashboard",
+      "reporterType": null,
+      "expectedType": "performance_issue",
+      "expectedGroup": "G03"
+    },
+    {
+      "id": 52,
+      "lang": "es",
+      "content": "Vi datos de clientes que no son míos en la lista de facturas.",
+      "pageUrl": "/invoices",
+      "reporterType": "other",
+      "expectedType": "security_concern",
+      "expectedGroup": "G10",
+      "note": "Wrong Reporter type."
+    },
+    {
+      "id": 53,
+      "lang": "en",
+      "content": "asdf test",
+      "pageUrl": "/dashboard",
+      "reporterType": null,
+      "expectedType": "other",
+      "expectedGroup": "S06",
+      "note": "Noise. Should not join any group."
+    },
+    {
+      "id": 54,
+      "lang": "en",
+      "content": "Your new pricing is ridiculous for a tool this slow.",
+      "pageUrl": "/billing",
+      "reporterType": "complaint",
+      "expectedType": "complaint",
+      "expectedGroup": "G07",
+      "note": "Hard: mixes price (G07) and slowness (G03); price is the main point."
+    },
+    {
+      "id": 55,
+      "lang": "es",
+      "content": "Al cerrar sesión y volver atrás sigo dentro de la cuenta.",
+      "pageUrl": "/dashboard",
+      "reporterType": "bug_report",
+      "expectedType": "security_concern",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G02"
+    },
+    {
+      "id": 56,
+      "lang": "en",
+      "content": "No reset password email, tried two different addresses",
+      "pageUrl": "/forgot-password",
+      "reporterType": "bug_report",
+      "expectedType": "bug_report",
+      "expectedGroup": "G09"
+    },
+    {
+      "id": 57,
+      "lang": "en",
+      "content": "Please give me a night mode, white screen is too bright",
+      "pageUrl": "/dashboard",
+      "reporterType": "complaint",
+      "expectedType": "improvement_suggestion",
+      "expectedGroup": "G05",
+      "note": "Different words (night mode) for G05."
+    },
+    {
+      "id": 58,
+      "lang": "es",
+      "content": "¿Dónde agrego usuarios para mi equipo?",
+      "pageUrl": "/settings/team",
+      "reporterType": "question",
+      "expectedType": "question",
+      "expectedGroup": "G08"
+    },
+    {
+      "id": 59,
+      "lang": "en",
+      "content": "Support replied after 5 days with a copy-paste answer. Terrible.",
+      "pageUrl": "/help",
+      "reporterType": null,
+      "expectedType": "complaint",
+      "expectedGroup": "G12"
+    },
+    {
+      "id": 60,
+      "lang": "en",
+      "content": "The search on the clients page hangs when I type quickly",
+      "pageUrl": "/clients",
+      "reporterType": "bug_report",
+      "expectedType": "performance_issue",
+      "acceptableTypes": ["bug_report"],
+      "expectedGroup": "G11"
+    }
+  ]
+}

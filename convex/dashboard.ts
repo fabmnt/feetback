@@ -354,6 +354,12 @@ export const getIssue = query({
     issueId: v.id("feedbackIssues"),
   },
   handler: async (ctx, args) => {
+    // AI triage deletes an issue when its only item joins another issue, so a
+    // dashboard page can outlive the issue it shows.
+    if (!(await ctx.db.get(args.issueId))) {
+      return null;
+    }
+
     const { issue } = await ensureIssueBelongsToViewer(ctx, args.issueId);
     const itemDocs = await ctx.db
       .query("feedbackItems")
@@ -397,7 +403,10 @@ export const updateIssue = mutation({
   handler: async (ctx, args) => {
     const { issue } = await ensureIssueBelongsToViewer(ctx, args.issueId);
 
+    // Any User edit counts as reviewing the AI triage of this issue.
     await ctx.db.patch(issue._id, {
+      needsReview: false,
+      editedByUser: true,
       ...(args.status ? { status: args.status } : {}),
       ...(args.priority ? { priority: args.priority } : {}),
       ...(args.primaryFeedbackType

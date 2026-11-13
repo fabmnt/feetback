@@ -271,12 +271,14 @@ function IssueRow({
     primaryFeedbackType: FeedbackTypeOption;
     signalScore: number;
     itemCount: number;
+    needsReview?: boolean;
     lastSubmittedAt: string;
     affectedApps: Array<{ name: string; clientKey: string }>;
   };
 }) {
   const itemCountLabel = `${issue.itemCount} ${issue.itemCount === 1 ? "item" : "items"}`;
   const meta = [
+    issue.needsReview ? "Needs review" : null,
     formatToken(issue.primaryFeedbackType),
     formatToken(issue.status),
     issue.priority === "unset"
