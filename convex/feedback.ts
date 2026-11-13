@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalMutation,
@@ -6,6 +7,11 @@ import {
   type MutationCtx,
   mutation,
 } from "./_generated/server";
+import {
+  buildIssueSignal,
+  ensureIssueCustomerAppLink,
+  signalInputFromItem,
+} from "./lib/issues";
 import { feedbackRateLimiter } from "./rateLimit";
 
 const feedbackType = v.union(
@@ -222,6 +228,8 @@ export const submit = internalMutation({
       clientKey,
       content: args.content,
       type: args.type,
+      reporterType: args.type,
+      triage: { status: "pending" },
       reporterIdentity: args.reporterIdentity,
       developmentContext: args.developmentContext,
       pageContext: args.pageContext,
@@ -231,8 +239,9 @@ export const submit = internalMutation({
     });
 
     const issue = await ctx.db.get(issueId);
+    const item = await ctx.db.get(itemId);
 
-    if (!issue) {
+    if (!issue || !item) {
       throw new ConvexError(
         "Feedback Issue could not be loaded after creation.",
       );
@@ -247,26 +256,7 @@ export const submit = internalMutation({
 
     await ctx.db.patch(issueId, {
       itemCount: issue.itemCount + 1,
-      signalScore: calculateSignalScore({
-        nextItemCount: issue.itemCount + 1,
-        hasReporterIdentity: Boolean(args.reporterIdentity),
-        hasVisualContext: Boolean(
-          args.screenshot || args.uploadedImages?.length,
-        ),
-        hasElementContext: Boolean(args.selectedElement),
-        type: args.type,
-        content: args.content,
-      }),
-      signalReasons: buildSignalReasons({
-        nextItemCount: issue.itemCount + 1,
-        hasReporterIdentity: Boolean(args.reporterIdentity),
-        hasVisualContext: Boolean(
-          args.screenshot || args.uploadedImages?.length,
-        ),
-        hasElementContext: Boolean(args.selectedElement),
-        type: args.type,
-        content: args.content,
-      }),
+      ...buildIssueSignal(signalInputFromItem(item, issue.itemCount + 1)),
       primaryFeedbackType:
         issue.primaryFeedbackType === "uncategorized"
           ? args.type
@@ -274,13 +264,7 @@ export const submit = internalMutation({
       lastSubmittedAt: submittedAt,
     });
 
-    const item = await ctx.db.get(itemId);
-
-    if (!item) {
-      throw new ConvexError(
-        "Feedback Item could not be loaded after creation.",
-      );
-    }
+    await ctx.scheduler.runAfter(0, internal.triage.processItem, { itemId });
 
     return toPublicFeedbackItem(item);
   },
@@ -325,30 +309,6 @@ async function ensureDemoApp(ctx: MutationCtx) {
   }
 
   return app;
-}
-
-async function ensureIssueCustomerAppLink(
-  ctx: MutationCtx,
-  customerId: Id<"customers">,
-  issueId: Id<"feedbackIssues">,
-  customerAppId: Id<"customerApps">,
-) {
-  const existing = await ctx.db
-    .query("issueCustomerApps")
-    .withIndex("by_issueId_and_customerAppId", (q) =>
-      q.eq("issueId", issueId).eq("customerAppId", customerAppId),
-    )
-    .unique();
-
-  if (existing) {
-    return existing._id;
-  }
-
-  return await ctx.db.insert("issueCustomerApps", {
-    customerId,
-    issueId,
-    customerAppId,
-  });
 }
 
 function isDemoClientKey(clientKey: string) {
@@ -419,51 +379,6 @@ function buildMediaMetadata(args: {
       size: image.size,
     })),
   ];
-}
-
-function calculateSignalScore(input: SignalInput) {
-  return buildSignalReasons(input).length + input.nextItemCount;
-}
-
-type SignalInput = {
-  nextItemCount: number;
-  hasReporterIdentity: boolean;
-  hasVisualContext: boolean;
-  hasElementContext: boolean;
-  type: string;
-  content: string;
-};
-
-function buildSignalReasons(input: SignalInput) {
-  const reasons = [
-    `${input.nextItemCount} Feedback Item${input.nextItemCount === 1 ? "" : "s"}`,
-  ];
-
-  if (input.hasVisualContext) {
-    reasons.push("Includes visual context");
-  }
-  if (input.hasElementContext) {
-    reasons.push("Includes Selected Element context");
-  }
-  if (input.hasReporterIdentity) {
-    reasons.push("Includes Reporter Identity for follow-up");
-  }
-  if (
-    input.type === "security_concern" ||
-    input.type === "bug_report" ||
-    input.type === "performance_issue"
-  ) {
-    reasons.push(`Feedback Type: ${input.type.replaceAll("_", " ")}`);
-  }
-  if (
-    /\b(data loss|payment|security|broken|can't|cannot|blocked|urgent)\b/i.test(
-      input.content,
-    )
-  ) {
-    reasons.push("Contains severity hints");
-  }
-
-  return reasons;
 }
 
 function toPublicFeedbackItem(item: Doc<"feedbackItems">) {

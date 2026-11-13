@@ -397,7 +397,9 @@ export const updateIssue = mutation({
   handler: async (ctx, args) => {
     const { issue } = await ensureIssueBelongsToViewer(ctx, args.issueId);
 
+    // Any User edit counts as reviewing the AI triage of this issue.
     await ctx.db.patch(issue._id, {
+      needsReview: false,
       ...(args.status ? { status: args.status } : {}),
       ...(args.priority ? { priority: args.priority } : {}),
       ...(args.primaryFeedbackType

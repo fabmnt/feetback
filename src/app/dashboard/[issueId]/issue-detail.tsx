@@ -27,7 +27,7 @@ import {
   type IssueStatus,
 } from "@/lib/feedback-types";
 import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 
 export function DashboardIssueDetail({ issueId }: { issueId: string }) {
   const issue = useQuery(api.dashboard.getIssue, {
@@ -87,6 +87,11 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
               <h1 className="truncate font-semibold text-xl">
                 {issue.issue.summary}
               </h1>
+              {issue.issue.needsReview ? (
+                <Badge className="mt-1" variant="outline">
+                  Needs review: AI was unsure about the type or grouping
+                </Badge>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -153,8 +158,13 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
               {issue.items.map((item) => (
                 <article className="py-4 first:pt-0" key={item._id}>
                   <p className="text-muted-foreground text-xs">
-                    {formatToken(item.type)} ·{" "}
-                    {new Date(item.submittedAt).toLocaleString()}
+                    {[
+                      formatToken(item.type),
+                      describeTriage(item),
+                      new Date(item.submittedAt).toLocaleString(),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                   <p className="mt-2">{item.content}</p>
                   <ItemMedia media={item.media} />
@@ -180,6 +190,36 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
       </div>
     </>
   );
+}
+
+function describeTriage(item: Doc<"feedbackItems">) {
+  const triage = item.triage;
+
+  if (!triage) {
+    return null;
+  }
+  if (triage.status === "pending") {
+    return "AI classifying...";
+  }
+  if (triage.status === "failed") {
+    return "AI triage failed";
+  }
+  if (triage.status === "skipped") {
+    return "AI triage off";
+  }
+
+  const confidence =
+    triage.typeConfidence === undefined
+      ? ""
+      : ` ${Math.round(triage.typeConfidence * 100)}%`;
+  const reporterChoice =
+    item.reporterType &&
+    item.reporterType !== "uncategorized" &&
+    item.reporterType !== item.type
+      ? `, Reporter chose ${formatToken(item.reporterType)}`
+      : "";
+
+  return `AI${confidence}${reporterChoice}`;
 }
 
 type MediaEntry = {

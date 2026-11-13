@@ -12,7 +12,12 @@ import type * as customerApps from "../customerApps.js";
 import type * as dashboard from "../dashboard.js";
 import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
+import type * as lib_gemini from "../lib/gemini.js";
+import type * as lib_issues from "../lib/issues.js";
+import type * as lib_triageConfig from "../lib/triageConfig.js";
+import type * as lib_triageDecision from "../lib/triageDecision.js";
 import type * as rateLimit from "../rateLimit.js";
+import type * as triage from "../triage.js";
 
 import type {
   ApiFromModules,
@@ -25,7 +30,12 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   feedback: typeof feedback;
   http: typeof http;
+  "lib/gemini": typeof lib_gemini;
+  "lib/issues": typeof lib_issues;
+  "lib/triageConfig": typeof lib_triageConfig;
+  "lib/triageDecision": typeof lib_triageDecision;
   rateLimit: typeof rateLimit;
+  triage: typeof triage;
 }>;
 
 /**
