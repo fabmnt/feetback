@@ -3,10 +3,7 @@
 // background after a Feedback Submission; the item first lives in its own
 // issue, so a failed or skipped triage leaves it visible and ungrouped.
 import { v } from "convex/values";
-import {
-  FEEDBACK_TYPE_OPTIONS,
-  FEEDBACK_TYPES,
-} from "../src/lib/feedback-types";
+import { FEEDBACK_TYPE_OPTIONS } from "../src/lib/feedback-types";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -32,10 +29,6 @@ import {
   interpretAnswers,
 } from "./lib/triageDecision";
 import { triageState } from "./schema";
-
-const classifiedType = v.union(
-  ...FEEDBACK_TYPES.map((type) => v.literal(type)),
-);
 
 const itemType = v.union(
   ...FEEDBACK_TYPE_OPTIONS.map((type) => v.literal(type)),
@@ -69,6 +62,10 @@ export const processItem = internalAction({
 
     try {
       const embedding = await embedText(item.content);
+      await ctx.runMutation(internal.triage.saveEmbedding, {
+        itemId: args.itemId,
+        embedding,
+      });
       const candidates = item.canJoinOtherIssue
         ? await findCandidateIssues(ctx, item, embedding)
         : [];
@@ -78,7 +75,6 @@ export const processItem = internalAction({
 
       await ctx.runMutation(internal.triage.applyResult, {
         itemId: args.itemId,
-        embedding,
         ...result,
       });
     } catch (error) {
@@ -215,12 +211,40 @@ export const loadCandidateIssues = internalQuery({
   },
 });
 
-export const applyResult = internalMutation({
+// Stored before the candidate search, so two reports processed at the same
+// time can still find each other: whichever searches last sees the other.
+export const saveEmbedding = internalMutation({
   args: {
     itemId: v.id("feedbackItems"),
     embedding: v.array(v.float64()),
-    type: classifiedType,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.itemId);
+    const existing = await ctx.db
+      .query("feedbackItemEmbeddings")
+      .withIndex("by_itemId", (q) => q.eq("itemId", args.itemId))
+      .unique();
+
+    if (!item || existing) {
+      return null;
+    }
+
+    await ctx.db.insert("feedbackItemEmbeddings", {
+      customerId: item.customerId,
+      itemId: item._id,
+      embedding: args.embedding,
+    });
+    return null;
+  },
+});
+
+export const applyResult = internalMutation({
+  args: {
+    itemId: v.id("feedbackItems"),
+    type: itemType,
     typeConfidence: v.number(),
+    isTypeConfident: v.boolean(),
     targetIssueId: v.union(v.id("feedbackIssues"), v.null()),
     groupingConfidence: v.optional(v.number()),
     needsReview: v.boolean(),
@@ -239,22 +263,19 @@ export const applyResult = internalMutation({
       throw new Error("Feedback Item has no Feedback Issue.");
     }
 
-    await ctx.db.insert("feedbackItemEmbeddings", {
-      customerId: item.customerId,
-      itemId: item._id,
-      embedding: args.embedding,
-    });
-
     const target = args.targetIssueId
       ? await ctx.db.get(args.targetIssueId)
       : null;
-    // Re-checked here because issues can change while the action runs.
+    // Re-checked here because issues can change while the action runs. A
+    // User's edits always win over the AI result.
+    const isSourceEdited = Boolean(sourceIssue.editedByUser);
     const canMove =
       target !== null &&
       target._id !== sourceIssue._id &&
       target.customerId === item.customerId &&
       target.status !== "closed" &&
-      sourceIssue.itemCount === 1;
+      sourceIssue.itemCount === 1 &&
+      !isSourceEdited;
     const destination = canMove ? target : sourceIssue;
     const classifiedItem = { ...item, type: args.type };
 
@@ -271,13 +292,21 @@ export const applyResult = internalMutation({
     const needsReview = Boolean(destination.needsReview) || args.needsReview;
 
     if (!canMove) {
-      const isOnlyItem = sourceIssue.itemCount === 1;
+      if (isSourceEdited) {
+        return null;
+      }
+
+      const shouldClassifyIssue =
+        args.isTypeConfident ||
+        sourceIssue.primaryFeedbackType === "uncategorized";
       await ctx.db.patch(sourceIssue._id, {
         needsReview,
-        ...(isOnlyItem
+        ...(shouldClassifyIssue
           ? {
               primaryFeedbackType: args.type,
-              ...buildIssueSignal(signalInputFromItem(classifiedItem, 1)),
+              ...buildIssueSignal(
+                signalInputFromItem(classifiedItem, sourceIssue.itemCount),
+              ),
             }
           : {}),
       });
@@ -301,14 +330,13 @@ export const applyResult = internalMutation({
     );
 
     const nextItemCount = target.itemCount + 1;
+    const shouldClassifyTarget =
+      !target.editedByUser && target.primaryFeedbackType === "uncategorized";
     await ctx.db.patch(target._id, {
       itemCount: nextItemCount,
       needsReview,
       ...buildIssueSignal(signalInputFromItem(classifiedItem, nextItemCount)),
-      primaryFeedbackType:
-        target.primaryFeedbackType === "uncategorized"
-          ? args.type
-          : target.primaryFeedbackType,
+      ...(shouldClassifyTarget ? { primaryFeedbackType: args.type } : {}),
       firstSubmittedAt:
         item.submittedAt < target.firstSubmittedAt
           ? item.submittedAt

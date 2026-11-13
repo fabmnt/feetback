@@ -42,8 +42,10 @@ export type CandidateIssue = {
 export type TriageQuestionKey = "feedback_type" | "same_issue";
 
 export type TriageResult = {
-  type: FeedbackType;
+  // Stays "uncategorized" when the model is unsure and the Reporter chose none.
+  type: FeedbackItemType;
   typeConfidence: number;
+  isTypeConfident: boolean;
   targetIssueId: Id<"feedbackIssues"> | null;
   groupingConfidence?: number;
   needsReview: boolean;
@@ -110,10 +112,7 @@ export function interpretAnswers(
   }
 
   const isTypeConfident = typeAnswer.confidence >= CONFIDENCE_THRESHOLD;
-  const reporterType = FEEDBACK_TYPES.find(
-    (type) => type === item.reporterType,
-  );
-  const type = isTypeConfident || !reporterType ? modelType : reporterType;
+  const type = isTypeConfident ? modelType : item.reporterType;
 
   const issueAnswer = answers.same_issue;
   const isGroupingConfident =
@@ -128,6 +127,7 @@ export function interpretAnswers(
   return {
     type,
     typeConfidence: typeAnswer.confidence,
+    isTypeConfident,
     targetIssueId,
     groupingConfidence: issueAnswer?.confidence,
     needsReview: !isTypeConfident || !isGroupingConfident,

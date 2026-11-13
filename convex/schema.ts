@@ -131,6 +131,8 @@ export default defineSchema({
     // Set when AI triage was unsure about the type or the grouping; cleared
     // when a User edits the issue.
     needsReview: v.optional(v.boolean()),
+    // Set once a User edits the issue; AI triage never overrides those edits.
+    editedByUser: v.optional(v.boolean()),
     firstSubmittedAt: v.string(),
     lastSubmittedAt: v.string(),
   })

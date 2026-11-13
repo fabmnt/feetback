@@ -60,7 +60,10 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
   if (issue === null) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3">
-        <p className="text-muted-foreground">Feedback Issue not found.</p>
+        <p className="text-muted-foreground">
+          Feedback Issue not found. Its feedback may have been grouped into
+          another issue.
+        </p>
         <Link
           className={buttonVariants({ variant: "outline" })}
           href="/dashboard"
