@@ -7,8 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { CopyButton } from "@/components/copy-button";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { FeedbackTypeSticker } from "@/components/feedback-type-sticker";
 import {
   Select,
   SelectContent,
@@ -26,8 +25,10 @@ import {
   type IssuePriority,
   type IssueStatus,
 } from "@/lib/feedback-types";
+import { formatRelativeTime } from "@/lib/relative-time";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { NeedsReviewSticker, PriorityFlag } from "../issue-badges";
 
 export function DashboardIssueDetail({ issueId }: { issueId: string }) {
   const issue = useQuery(api.dashboard.getIssue, {
@@ -51,8 +52,8 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
 
   if (issue === undefined) {
     return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        Loading...
+      <div className="flex flex-1 items-center justify-center text-ink-soft">
+        Loading issue...
       </div>
     );
   }
@@ -60,15 +61,15 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
   if (issue === null) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3">
-        <p className="text-muted-foreground">
+        <p className="text-ink-soft">
           Feedback Issue not found. Its feedback may have been grouped into
           another issue.
         </p>
         <Link
-          className={buttonVariants({ variant: "outline" })}
+          className="inline-flex h-10 items-center rounded-full border-2 border-ink px-5 font-bold transition-colors hover:bg-ink hover:text-paper"
           href="/dashboard"
         >
-          Back to Issues
+          Back to Inbox
         </Link>
       </div>
     );
@@ -76,67 +77,76 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
 
   return (
     <>
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="min-w-0">
-              <Link
-                className="text-muted-foreground text-sm hover:text-foreground"
-                href="/dashboard"
-              >
-                <ArrowLeft className="mr-1 inline-block size-3.5 align-[-2px]" />
-                Issues
-              </Link>
-              <h1 className="truncate font-semibold text-xl">
-                {issue.issue.summary}
-              </h1>
-              {issue.issue.needsReview ? (
-                <Badge className="mt-1" variant="outline">
-                  Needs review: AI was unsure about the type or grouping
-                </Badge>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <EditSelect
-              label="Status"
-              value={issue.issue.status}
-              values={ISSUE_STATUSES}
-              onChange={(status) =>
-                updateIssueField({
-                  issueId: issue.issue._id,
-                  status: status as IssueStatus,
-                })
-              }
-            />
-            <EditSelect
-              label="Priority"
-              value={issue.issue.priority}
-              values={ISSUE_PRIORITIES}
-              onChange={(priority) =>
-                updateIssueField({
-                  issueId: issue.issue._id,
-                  priority: priority as IssuePriority,
-                })
-              }
-            />
-            <EditSelect
-              label="Type"
-              value={issue.issue.primaryFeedbackType}
-              values={FEEDBACK_TYPE_OPTIONS}
-              onChange={(primaryFeedbackType) =>
-                updateIssueField({
-                  issueId: issue.issue._id,
-                  primaryFeedbackType:
-                    primaryFeedbackType as FeedbackTypeOption,
-                })
-              }
-            />
-          </div>
+      <header className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-8 sm:pt-10">
+        <Link
+          className="inline-flex items-center gap-1 font-semibold text-ink-soft text-sm hover:text-ink"
+          href="/dashboard"
+        >
+          <ArrowLeft className="size-4" />
+          Inbox
+        </Link>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <FeedbackTypeSticker
+            type={issue.issue.primaryFeedbackType}
+            label={formatToken(issue.issue.primaryFeedbackType)}
+            variant="subtle"
+            className="capitalize"
+          />
+          {issue.issue.needsReview ? <NeedsReviewSticker /> : null}
+          <PriorityFlag priority={issue.issue.priority} />
+          <span className="text-ink-soft text-sm">
+            {issue.issue.itemCount}{" "}
+            {issue.issue.itemCount === 1 ? "report" : "reports"} · last{" "}
+            {formatRelativeTime(issue.issue.lastSubmittedAt)}
+          </span>
+        </div>
+        <h1 className="brand-headline mt-3 max-w-4xl text-4xl sm:text-5xl">
+          {issue.issue.summary}
+        </h1>
+        {issue.issue.needsReview ? (
+          <p className="mt-3 text-ink-soft text-sm">
+            AI was unsure about the type or grouping. Any edit marks it as
+            reviewed.
+          </p>
+        ) : null}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <EditSelect
+            label="Status"
+            value={issue.issue.status}
+            values={ISSUE_STATUSES}
+            onChange={(status) =>
+              updateIssueField({
+                issueId: issue.issue._id,
+                status: status as IssueStatus,
+              })
+            }
+          />
+          <EditSelect
+            label="Priority"
+            value={issue.issue.priority}
+            values={ISSUE_PRIORITIES}
+            onChange={(priority) =>
+              updateIssueField({
+                issueId: issue.issue._id,
+                priority: priority as IssuePriority,
+              })
+            }
+          />
+          <EditSelect
+            label="Type"
+            value={issue.issue.primaryFeedbackType}
+            values={FEEDBACK_TYPE_OPTIONS}
+            onChange={(primaryFeedbackType) =>
+              updateIssueField({
+                issueId: issue.issue._id,
+                primaryFeedbackType: primaryFeedbackType as FeedbackTypeOption,
+              })
+            }
+          />
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 py-5 md:px-6 lg:grid-cols-[1fr_340px]">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[1fr_360px]">
         {updateError ? (
           <p className="text-destructive text-sm lg:col-span-2">
             {updateError}
@@ -145,22 +155,28 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
 
         <div className="min-w-0">
           <section>
-            <h2 className="font-semibold">Issue Signal</h2>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <h2 className="font-extrabold text-xl">Issue Signal</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
               {issue.issue.signalReasons.map((reason) => (
-                <Badge key={reason} variant="secondary">
+                <span
+                  key={reason}
+                  className="rounded-full bg-lilac px-3 py-1 font-semibold text-sm"
+                >
                   {reason}
-                </Badge>
+                </span>
               ))}
             </div>
           </section>
 
           <section className="mt-8">
-            <h2 className="font-semibold">Evidence</h2>
-            <div className="mt-2 divide-y">
+            <h2 className="font-extrabold text-xl">Evidence</h2>
+            <div className="mt-3 grid gap-3">
               {issue.items.map((item) => (
-                <article className="py-4 first:pt-0" key={item._id}>
-                  <p className="text-muted-foreground text-xs">
+                <article
+                  className="rounded-3xl rounded-bl-md bg-card p-5 ring-1 ring-line"
+                  key={item._id}
+                >
+                  <p className="text-ink-soft text-xs">
                     {[
                       formatToken(item.type),
                       describeTriage(item),
@@ -169,7 +185,7 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  <p className="mt-2">{item.content}</p>
+                  <p className="mt-2 text-lg leading-snug">{item.content}</p>
                   <ItemMedia media={item.media} />
                   <ItemContext item={item} />
                 </article>
@@ -179,14 +195,18 @@ export function DashboardIssueDetail({ issueId }: { issueId: string }) {
         </div>
 
         <aside className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Sparkles className="size-4" />
+          <h2 className="flex items-center gap-2 font-extrabold text-xl">
+            <Sparkles className="size-5 text-grape" />
             Implementation Prompt
           </h2>
-          <pre className="max-h-[560px] overflow-auto rounded-lg bg-muted p-4 text-sm whitespace-pre-wrap">
+          <pre className="max-h-[560px] overflow-auto whitespace-pre-wrap rounded-2xl bg-night p-5 font-mono text-sm text-white leading-relaxed">
             {issue.implementationPrompt}
           </pre>
-          <CopyButton className="self-start" value={issue.implementationPrompt}>
+          <CopyButton
+            className="h-10 self-start rounded-full bg-grape px-5 font-bold text-white hover:bg-grape-deep hover:text-white"
+            variant="default"
+            value={issue.implementationPrompt}
+          >
             Copy prompt
           </CopyButton>
         </aside>
@@ -256,12 +276,12 @@ function ItemMedia({ media }: { media: MediaEntry[] }) {
             width={entry.width ?? SCREENSHOT_FALLBACK_WIDTH}
             height={entry.height ?? SCREENSHOT_FALLBACK_HEIGHT}
             sizes="(min-width: 1024px) 60vw, 100vw"
-            className="h-auto w-full rounded-md border"
+            className="h-auto w-full rounded-xl border border-line"
           />
         ) : (
           <span
             key={entry.url}
-            className="relative block h-24 w-24 overflow-hidden rounded-md border"
+            className="relative block h-24 w-24 overflow-hidden rounded-xl border border-line"
           >
             <Image
               src={entry.url}
@@ -314,7 +334,9 @@ function ItemContext({
   }
 
   return (
-    <p className="mt-2 text-muted-foreground text-sm">{parts.join(" · ")}</p>
+    <p className="mt-3 break-words text-ink-soft text-sm">
+      {parts.join(" · ")}
+    </p>
   );
 }
 
@@ -344,13 +366,21 @@ function EditSelect({
         }
       }}
     >
-      <SelectTrigger className="w-full md:w-32" aria-label={label}>
+      <SelectTrigger
+        className="h-9 rounded-full border-line bg-card capitalize data-[size=default]:h-9"
+        aria-label={label}
+      >
+        <span className="text-ink-soft">{label}:</span>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
           {items.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
+            <SelectItem
+              key={item.value}
+              value={item.value}
+              className="capitalize"
+            >
               {item.label}
             </SelectItem>
           ))}

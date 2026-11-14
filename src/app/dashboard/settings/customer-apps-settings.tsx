@@ -35,18 +35,19 @@ export function CustomerAppsSettings() {
 
   return (
     <>
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center gap-2 px-4 py-3 md:px-6">
-          <h1 className="truncate font-semibold text-xl">Customer Apps</h1>
-        </div>
+      <header className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-8 sm:pt-10">
+        <h1 className="brand-headline text-5xl sm:text-6xl">Customer Apps</h1>
+        <p className="mt-3 max-w-lg text-ink-soft text-lg">
+          Where your Reporters leave their footprints. One Client Key per app.
+        </p>
       </header>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-5 md:px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-8">
         <CreateCustomerAppForm />
         {apps === undefined ? (
-          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 rounded-3xl bg-card" />
         ) : (
-          <section className="divide-y">
+          <section className="grid gap-4">
             {apps.map((app) => (
               <CustomerAppSettings
                 app={app}
@@ -91,24 +92,29 @@ function CreateCustomerAppForm() {
   };
 
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="font-semibold text-lg">New Customer App</h2>
-      <p className="max-w-xl text-muted-foreground text-sm">
+    <section className="flex flex-col gap-2 rounded-3xl bg-grape p-6 text-white sm:p-8 dark:bg-grape/15 dark:ring-1 dark:ring-grape/40">
+      <h2 className="font-extrabold text-2xl">New Customer App</h2>
+      <p className="max-w-xl text-sm text-white/80">
         Each app gets its own Client Key, Allowed Origins, and embed snippet for
         the Feetback script.
       </p>
-      <div className="flex max-w-lg flex-col gap-2 sm:flex-row">
+      <div className="mt-2 flex max-w-lg flex-col gap-2 sm:flex-row">
         <Input
+          className="h-10 rounded-full border-transparent bg-card px-4 text-ink dark:border-line"
           placeholder="App name, e.g. Acme Console"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
-        <Button disabled={creating} onClick={() => void create()}>
+        <Button
+          className="h-10 rounded-full bg-sun px-5 font-extrabold text-night hover:-rotate-2 hover:bg-sun"
+          disabled={creating}
+          onClick={() => void create()}
+        >
           <Plus data-icon="inline-start" />
           {creating ? "Creating..." : "Create app"}
         </Button>
       </div>
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      {error ? <p className="font-semibold text-sm text-sun">{error}</p> : null}
     </section>
   );
 }
@@ -158,17 +164,17 @@ function CustomerAppSettings({
   const snippet = buildEmbedSnippet(app.clientKey, embedOrigin);
 
   return (
-    <section className="grid gap-6 py-6 first:pt-0 lg:grid-cols-2">
+    <section className="grid gap-6 rounded-3xl bg-card p-5 ring-1 ring-line sm:p-6 lg:grid-cols-2">
       <div className="grid content-start gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs">Client Key</p>
-            <code className="font-mono text-sm">{app.clientKey}</code>
+            <p className="font-semibold text-ink-soft text-xs">Client Key</p>
+            <code className="break-all font-mono text-sm">{app.clientKey}</code>
           </div>
           <CopyButton value={app.clientKey}>Copy key</CopyButton>
         </div>
         <label className="grid gap-1 text-sm" htmlFor={`app-name-${app._id}`}>
-          <span className="text-muted-foreground">App name</span>
+          <span className="font-semibold text-ink-soft">App name</span>
           <Input
             id={`app-name-${app._id}`}
             value={name}
@@ -179,7 +185,7 @@ function CustomerAppSettings({
           className="grid gap-1 text-sm"
           htmlFor={`app-origins-${app._id}`}
         >
-          <span className="text-muted-foreground">
+          <span className="font-semibold text-ink-soft">
             Allowed Origins (one per line)
           </span>
           <textarea
@@ -190,7 +196,7 @@ function CustomerAppSettings({
             onChange={(event) => setOrigins(event.target.value)}
           />
           {hasAllowedOrigins ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-ink-soft text-xs">
               Only these origins can send feedback submissions.
             </p>
           ) : (
@@ -201,9 +207,14 @@ function CustomerAppSettings({
           )}
         </label>
         <div className="flex items-center gap-3">
-          <Button onClick={() => void save()}>Save changes</Button>
+          <Button
+            className="h-9 rounded-full px-4 font-bold"
+            onClick={() => void save()}
+          >
+            Save changes
+          </Button>
           {status.kind === "saved" ? (
-            <span className="text-muted-foreground text-sm">Saved</span>
+            <span className="font-semibold text-mint text-sm">Saved</span>
           ) : null}
           {status.kind === "error" ? (
             <span className="text-destructive text-sm">{status.message}</span>
@@ -212,10 +223,10 @@ function CustomerAppSettings({
       </div>
       <div className="grid content-start gap-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-muted-foreground text-xs">Embed snippet</p>
+          <p className="font-semibold text-ink-soft text-xs">Embed snippet</p>
           <CopyButton value={snippet}>Copy snippet</CopyButton>
         </div>
-        <pre className="overflow-auto rounded-lg bg-muted p-3 font-mono text-xs whitespace-pre-wrap">
+        <pre className="overflow-auto whitespace-pre-wrap rounded-2xl bg-night p-4 font-mono text-white text-xs leading-relaxed">
           {snippet}
         </pre>
       </div>

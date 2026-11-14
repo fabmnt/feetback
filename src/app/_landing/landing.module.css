@@ -1,15 +1,15 @@
-/* Landing page palette. Each Feedback Type keeps one sticker color everywhere. */
+/* Landing page aliases of the brand palette defined in globals.css. */
 .page {
-  --lp-ink: #1f1147;
-  --lp-ink-soft: #4a3f73;
-  --lp-paper: #f7f4ff;
-  --lp-grape: #6b3cf6;
-  --lp-grape-deep: #4b1fd1;
-  --lp-sun: #ffc933;
-  --lp-pink: #ff4f7b;
-  --lp-sky: #38b6ff;
-  --lp-mint: #1fcf98;
-  --lp-line: #e3dafc;
+  --lp-ink: var(--color-ink);
+  --lp-ink-soft: var(--color-ink-soft);
+  --lp-paper: var(--color-paper);
+  --lp-grape: var(--color-grape);
+  --lp-grape-deep: var(--color-grape-deep);
+  --lp-sun: var(--color-sun);
+  --lp-pink: var(--color-pink);
+  --lp-sky: var(--color-sky);
+  --lp-mint: var(--color-mint);
+  --lp-line: var(--color-line);
 
   background: var(--lp-paper);
   color: var(--lp-ink);
@@ -21,14 +21,6 @@
 .page :focus-visible {
   outline: 3px solid var(--lp-sun);
   outline-offset: 3px;
-}
-
-.headline {
-  font-stretch: 86%;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-  line-height: 0.92;
 }
 
 /* Feedback Popover notes: four notes share one 12s loop, 3s each. */

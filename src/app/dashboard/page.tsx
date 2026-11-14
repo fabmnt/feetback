@@ -1,9 +1,9 @@
-import { DashboardIssues } from "./dashboard-issues";
+import { DashboardInbox } from "./dashboard-inbox";
 
 export const metadata = {
-  title: "Dashboard | Feetback",
+  title: "Inbox | Feetback",
 };
 
 export default function DashboardPage() {
-  return <DashboardIssues />;
+  return <DashboardInbox />;
 }

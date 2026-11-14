@@ -1,6 +1,6 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardAuthGate } from "./dashboard-auth-gate";
-import { DashboardSidebar } from "./dashboard-sidebar";
+import { DashboardHeader } from "./dashboard-header";
+import { DashboardThemeSync } from "./theme-toggle";
 
 export default function DashboardLayout({
   children,
@@ -8,11 +8,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardAuthGate>
-      <SidebarProvider>
-        <DashboardSidebar />
-        <SidebarInset className="min-h-svh">{children}</SidebarInset>
-      </SidebarProvider>
-    </DashboardAuthGate>
+    <div className="flex min-h-svh flex-col bg-paper font-brand text-ink">
+      <DashboardThemeSync />
+      <DashboardAuthGate>
+        <DashboardHeader />
+        <main className="flex flex-1 flex-col">{children}</main>
+      </DashboardAuthGate>
+    </div>
   );
 }

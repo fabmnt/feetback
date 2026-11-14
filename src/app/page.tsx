@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
 import Link from "next/link";
-import { FootprintIcon } from "@/app/_landing/footprint-icon";
 import { HeroScene } from "@/app/_landing/hero-scene";
 import styles from "@/app/_landing/landing.module.css";
 import { EMBED_SNIPPET } from "@/app/_landing/landing-content";
 import { LANDING_COPY, type LandingCopy } from "@/app/_landing/landing-copy";
-import { NoteSticker } from "@/app/_landing/note-sticker";
 import { FeetbackEmbed } from "@/app/feetback-embed";
+import { bricolage } from "@/app/fonts";
+import { FeedbackTypeSticker } from "@/components/feedback-type-sticker";
+import { FootprintIcon } from "@/components/footprint-icon";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { cn } from "@/lib/utils";
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  axes: ["opsz", "wdth"],
-  variable: "--font-bricolage",
-});
 
 const CONTACT_EMAIL = "fabianmontoya2802@gmail.com";
 
@@ -44,10 +38,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const requestAccessHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(copy.requestAccessSubject)}`;
 
   return (
-    <div
-      lang={locale}
-      className={cn(styles.page, bricolage.variable, "min-h-svh")}
-    >
+    <div lang={locale} className={cn(styles.page, "min-h-svh")}>
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-8">
         <Link
           href="/"
@@ -78,7 +69,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <section className="mx-auto w-full max-w-6xl px-4 pt-10 pb-16 sm:px-8 sm:pt-16">
           <h1
             className={cn(
-              styles.headline,
+              "brand-headline",
               "max-w-5xl text-[clamp(3.25rem,10vw,8rem)]",
             )}
           >
@@ -104,7 +95,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
         <section className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-16 sm:px-8 md:grid-cols-2 md:items-center">
           <div>
-            <h2 className={cn(styles.headline, "text-5xl sm:text-6xl")}>
+            <h2 className={cn("brand-headline", "text-5xl sm:text-6xl")}>
               {copy.voicesTitle}
             </h2>
             <p className="mt-5 max-w-md text-(--lp-ink-soft) text-lg leading-relaxed">
@@ -116,7 +107,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
         <div className="border-(--lp-line) border-y bg-white">
           <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-8">
-            <h2 className={cn(styles.headline, "text-5xl sm:text-6xl")}>
+            <h2 className={cn("brand-headline", "text-5xl sm:text-6xl")}>
               {copy.setupTitle}
             </h2>
             <div className="mt-10 grid gap-10 md:grid-cols-[1fr_1.1fr]">
@@ -144,7 +135,10 @@ export default async function Home({ searchParams }: HomeProps) {
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-8">
             <div className="flex flex-col items-start gap-8 rounded-[2rem] bg-(--lp-grape) px-6 py-12 text-white shadow-[0_30px_60px_-30px_rgb(0_0_0/0.8)] sm:px-12 md:flex-row md:items-center md:justify-between">
               <h2
-                className={cn(styles.headline, "max-w-xl text-5xl sm:text-6xl")}
+                className={cn(
+                  "brand-headline",
+                  "max-w-xl text-5xl sm:text-6xl",
+                )}
               >
                 {copy.ctaTitle}
               </h2>
@@ -210,7 +204,7 @@ function SameIssueVisual({ copy }: { copy: LandingCopy }) {
       </div>
       <div className="rounded-2xl border-(--lp-pink) border-2 bg-white p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <NoteSticker
+          <FeedbackTypeSticker
             type="bug_report"
             label={copy.noteTypeLabels.bug_report}
           />

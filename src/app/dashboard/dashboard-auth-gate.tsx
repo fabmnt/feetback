@@ -4,6 +4,7 @@ import { SignInButton, useAuth } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { type ReactNode, useState } from "react";
 
+import { FootprintIcon } from "@/components/footprint-icon";
 import { Button } from "@/components/ui/button";
 import { api } from "../../../convex/_generated/api";
 
@@ -85,8 +86,11 @@ function AuthMessage({
 }) {
   return (
     <main className="grid min-h-svh place-items-center px-6">
-      <section className="grid max-w-md gap-4 text-center">
-        <p className="text-muted-foreground text-sm">{children}</p>
+      <section className="grid max-w-md justify-items-center gap-4 text-center">
+        <span className="grid size-12 place-items-center rounded-full bg-sun text-night">
+          <FootprintIcon className="size-6 rotate-12" />
+        </span>
+        <p className="text-ink-soft">{children}</p>
         {action}
       </section>
     </main>

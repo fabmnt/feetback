@@ -6,13 +6,6 @@ export type LandingNoteType = Extract<
   "bug_report" | "improvement_suggestion" | "question" | "performance_issue"
 >;
 
-export const NOTE_TYPE_STYLES: Record<LandingNoteType, string> = {
-  bug_report: "bg-(--lp-pink) text-white",
-  improvement_suggestion: "bg-(--lp-sun) text-(--lp-ink)",
-  question: "bg-(--lp-sky) text-(--lp-ink)",
-  performance_issue: "bg-(--lp-mint) text-(--lp-ink)",
-};
-
 export type LandingNote = {
   type: LandingNoteType;
   text: string;

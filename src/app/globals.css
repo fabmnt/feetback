@@ -4,7 +4,34 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Feetback brand palette, shared by the landing page and the Dashboard.
+   Each Feedback Type keeps one sticker color everywhere. */
+@theme static {
+  --color-ink: #1f1147;
+  --color-ink-soft: #4a3f73;
+  --color-paper: #f7f4ff;
+  --color-lilac: #efe9ff;
+  --color-grape: #6b3cf6;
+  --color-grape-deep: #4b1fd1;
+  --color-sun: #ffc933;
+  --color-pink: #ff4f7b;
+  --color-sky: #38b6ff;
+  --color-mint: #1fcf98;
+  --color-line: #e3dafc;
+  /* Stays dark in both themes: code blocks and text on sun backgrounds. */
+  --color-night: #1f1147;
+}
+
+@utility brand-headline {
+  font-stretch: 86%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  line-height: 0.92;
+}
+
 @theme inline {
+  --font-brand: var(--font-bricolage), system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -48,25 +75,26 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* shadcn tokens mapped onto the brand palette. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-grape);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-lilac);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-lilac);
+  --muted-foreground: var(--color-ink-soft);
+  --accent: var(--color-lilac);
+  --accent-foreground: var(--color-ink);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-grape);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -83,38 +111,20 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Dark theme: the brand palette is remapped, and shadcn tokens follow it
+   through the var(--color-*) references in :root. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  color-scheme: dark;
+  --color-ink: #f3efff;
+  --color-ink-soft: #b3a8dc;
+  --color-paper: #110a28;
+  --color-lilac: #2a2052;
+  --color-grape: #8b66ff;
+  --color-grape-deep: #a98cff;
+  --color-line: #2e2559;
+  --card: #1a1139;
+  --popover: #1a1139;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 @layer base {

@@ -1,10 +1,9 @@
 import type { CSSProperties } from "react";
-
-import { FootprintIcon } from "./footprint-icon";
+import { FeedbackTypeSticker } from "@/components/feedback-type-sticker";
+import { FootprintIcon } from "@/components/footprint-icon";
 import styles from "./landing.module.css";
 import { buildLandingNotes, type LandingNote } from "./landing-content";
 import type { LandingCopy } from "./landing-copy";
-import { NoteSticker } from "./note-sticker";
 
 const FOOTSTEP_COUNT = 4;
 
@@ -96,7 +95,7 @@ function FeedbackPopover({
             >
               {note.text}
             </span>
-            <NoteSticker
+            <FeedbackTypeSticker
               type={note.type}
               label={copy.noteTypeLabels[note.type]}
               className={`${styles.typedSticker} self-start`}
@@ -168,7 +167,7 @@ function InboxRow({
   return (
     <li className="mb-2 rounded-xl bg-white/8 p-3">
       <div className="flex items-center justify-between gap-2">
-        <NoteSticker type={note.type} label={typeLabel} />
+        <FeedbackTypeSticker type={note.type} label={typeLabel} />
         <span className="truncate text-white/60 text-xs">{note.app}</span>
       </div>
       <p className="mt-2 text-sm leading-snug">{note.text}</p>
